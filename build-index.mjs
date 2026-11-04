@@ -101,7 +101,7 @@ function uml(lang) {
   return `<svg viewBox="-2 0 764 456" class="uml" role="img" aria-label="${zh ? "UML：bio 层继承 Anatomy 并实现七条生命法则" : "UML: the bio layer extends Anatomy and realizes the seven laws of life"}">${out.join("")}</svg>`;
 }
 
-const thumb = d => `<a class="card" href="#fig-${d[0]}"><img src="thumbs/${d[6].replace(".html", ".png")}" alt="" loading="lazy"><span class="card-n">Fig. ${d[0]} · ${d[3]}</span><b>${t(d[1], d[2])}</b></a>`;
+const thumb = d => `<a class="card" href="#fig-${d[0]}"><img src="thumbs/${d[6].replace(".html", ".jpg")}" alt="" loading="lazy"><span class="card-n">Fig. ${d[0]} · ${d[3]}</span><b>${t(d[1], d[2])}</b></a>`;
 const detail = d => `<section class="figure" id="fig-${d[0]}">
 <div class="sec-head"><h3>${t(`Fig. ${d[0]} · ${d[1]}`, `Fig. ${d[0]} · ${d[2]}`)}</h3><span class="mono">${d[3]}</span></div>
 ${t(`<p>${d[4]}</p>`, `<p>${d[7]}</p>`, "div")}
