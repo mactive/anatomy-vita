@@ -1,10 +1,11 @@
-// 03 · Mitosis — one rounded cell on a microscope slide, held by two stage clips.
+// 03 · Mitosis (v3) — one rounded cell on a microscope slide, held by two stage clips. Membrane by SOFT.blobOf,
+// mitochondria shared out between the daughters, live behaviour by vitaLoop.
 // What moves: time. Scrub through the hour of mitosis: chromosomes condense, line up on the plate, sisters are
 // pulled apart along the spindle, and the contractile ring pinches one cell into two.
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { k, G, liveScript, RNG_SRC, plinth, vitaPage, byDepth } from "../../bio/bio.mjs";
+import { k, G, liveScript, LOOP_SRC, RNG_SRC, plinth, vitaPage, byDepth } from "../../bio/bio.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "../../site/demos");
@@ -51,7 +52,6 @@ const live = `
 const P=${JSON.stringify(P)}; const UM=${UM}, R0=${R0}, SZ=${SZ}; const Q=UM/5*1.15;
 ${RNG_SRC}
 const stage=document.querySelector(".iso-stage"), svg=stage.querySelector("svg"), cellG=svg.querySelector('[data-part="cell"]'), readout=document.querySelector("[data-readout]");
-const still=matchMedia("(prefers-reduced-motion: reduce)");
 const V=G.viewOf(P), at=(p)=>K.iso(p,P), f1=(v)=>v.toFixed(1);
 const clamp01=(x)=>Math.max(0,Math.min(1,x)), sm=(a,b,x)=>{const t=clamp01((x-a)/(b-a));return t*t*(3-2*t);}, mix=(a,b,t)=>a+(b-a)*t, mix3=(a,b,t)=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
 // HeLa-like timing, minutes from nuclear envelope breakdown's prelude
@@ -75,21 +75,23 @@ function geometry(t){
   const poles=[G.add3(C,[-poleX,poleOff[1]*(1-sm(0,16,t)),poleOff[2]]),G.add3(C,[poleX,poleOff[1]*(1-sm(0,16,t)),poleOff[2]])];
   return {cyto,Rm,dsep,zc,C,poles};
 }
-// the membrane: a surface of revolution about the spindle axis, r(s) = √(R² − (|s| − d)²), which is one sphere at d = 0
-// and two touching daughters at d ≈ R. Its silhouette is the union of its projected cross-sections, so fill, outline,
-// neck and contractile ring all come from the same profile.
+// the membrane: one soft body of two spheres (SOFT.blobOf). The blend shrinks as the ring closes, so the furrow deepens
+// and each lobe keeps its own light; d = 0 is one sphere, d ≈ R two touching daughters.
 function membrane(g){
-  const Rm=g.Rm, d=g.dsep, eps=4; const s1=d+Rm; const u=K.iso([0,1,0],P), o=K.iso([0,0,0],P), w=K.iso([0,0,1],P);
-  const uy=[u[0]-o[0],u[1]-o[1]], uz=[w[0]-o[0],w[1]-o[1]];
-  const rOf=(s)=>{ const as=Math.sqrt(s*s+eps*eps)-eps; return Math.sqrt(Math.max(0,Rm*Rm-(as-d)*(as-d))); };
-  const polys=[]; const n=Math.ceil(2*s1/2.2);
-  for(let i=0;i<=n;i++){ const s=-s1+2*s1*i/n; const r=rOf(s); if(r<0.5) continue; const c=at([g.C[0]+s,g.C[1],g.C[2]]); let dd="M";
-    for(let j=0;j<36;j++){ const th=j/36*Math.PI*2; dd+=(c[0]+r*(Math.cos(th)*uy[0]+Math.sin(th)*uz[0])).toFixed(1)+" "+(c[1]+r*(Math.cos(th)*uy[1]+Math.sin(th)*uz[1])).toFixed(1)+(j<35?"L":"Z"); }
-    polys.push('<path d="'+dd+'"/>'); }
-  const union=polys.join("");
-  const c1=at(G.add3(g.C,[-d,0,0])), c2=at(G.add3(g.C,[d,0,0]));
-  const tones=[G.sphereOf(G.add3(g.C,[-d,0,0]),Rm,P).shades.slice(1),d>0.5?G.sphereOf(G.add3(g.C,[d,0,0]),Rm,P).shades.slice(1):[]].flat();
-  return {union,tones,neck:rOf(0),lobes:d>0.5?[c1,c2]:[c1]};
+  const d=g.dsep, Rm=g.Rm;
+  const spheres=d>0.5?[[g.C[0]-d,g.C[1],g.C[2],Rm],[g.C[0]+d,g.C[1],g.C[2],Rm]]:[[g.C[0],g.C[1],g.C[2],Rm]];
+  const body=SOFT.blobOf(spheres,P,{merge:mix(0.55,0.04,g.cyto),step:1.3});
+  const neckR=d<Rm? Math.sqrt(Math.max(0,Rm*Rm-d*d))*(1-0.85*g.cyto) : 0;
+  return {body,neck:neckR,lobes:spheres.map((q)=>at(q))};
+}
+// mitochondria: tubules in the cytoplasm; at cytokinesis each one goes with the daughter on its side
+const MITO=Array.from({length:14},()=>{ const u=G.unit3([rand()-0.5,rand()-0.5,(rand()-0.5)*0.8]); const rr=(0.5+0.35*rand()); return {u,rr,dir:G.unit3([rand()-0.5,rand()-0.5,rand()-0.5]),len:(1.2+rand()*1.2)*UM}; });
+function mitochondria(g,t){
+  const out=[];
+  for(const m of MITO){ const side=m.u[0]<0?-1:1; const home=G.add3(g.C,[side*g.dsep,0,0]);
+    const c=G.add3(home,G.mul3(m.u,g.Rm*m.rr)); const a=G.add3(c,G.mul3(m.dir,-m.len/2)), b=G.add3(c,G.mul3(m.dir,m.len/2));
+    for(const piece of T.tubePieces(G.resample([a,b],1),0.32*UM,P,{maxLength:40})) out.push([G.dot3(piece.mid,V),'<g class="bio-stain" style="--stain:var(--stain-eosin);--stain-k:.7">'+T.tubeSvg(piece,{tone:"mid"})+'</g>']); }
+  return out;
 }
 function chromatids(t,g){
   const out=[]; const cond=sm(-2,14,t), toPlate=sm(14,26,t), ana=sm(45,51,t), tel=sm(52,64,t);
@@ -111,11 +113,10 @@ function chromatids(t,g){
 function draw(t){
   const g=geometry(t); const items=[]; const put=(d,h)=>items.push([d,h]);
   const mem=membrane(g);
-  const clip='<clipPath id="cellclip">'+mem.union+'</clipPath>';
-  const rim='<g class="bio-rim" style="fill:var(--anatomy-hi);stroke:var(--anatomy-hi);stroke-width:2.2;stroke-linejoin:round">'+mem.union+'</g>';
-  const back=clip+rim+'<g class="bio-shell-back" style="fill:color-mix(in oklab,var(--anatomy-paper),var(--anatomy-shade-1) 30%)">'+mem.union+'<g clip-path="url(#cellclip)">'+mem.tones.map((d)=>d?'<path class="bio-shell-tone" d="'+d+'"/>':"").join("")+'</g></g>';
+  const back='<g class="bio-cell-back">'+K.solidSvg(mem.body,{tone:"hi"})+'</g>';
   const gleam=mem.lobes.map((c)=>{const r=g.Rm*G.scaleOf(P); const x=c[0]-r*0.38, y=c[1]-r*0.52; return '<ellipse class="bio-gleam" cx="'+f1(x)+'" cy="'+f1(y)+'" rx="'+f1(r*0.22)+'" ry="'+f1(r*0.1)+'" transform="rotate(-28 '+f1(x)+' '+f1(y)+')"/>';}).join("");
-  const front='<g class="bio-shell-front"><g style="fill:var(--anatomy-top)" opacity=".16">'+mem.union+'</g><g clip-path="url(#cellclip)">'+gleam+'</g></g>';
+  const front='<g class="bio-shell-front"><path class="bio-glass" d="'+mem.body.fill+'"/>'+gleam+'<path class="iso-line bio-membrane" data-tone="hi" d="'+mem.body.outline+'"/></g>';
+  for(const it of mitochondria(g,t)) put(it[0],it[1]);
   const env=1-sm(12,17,t), reform=sm(54,66,t);
   // interphase nucleus: envelope with pores, nucleolus inside; it breaks down at the end of prophase
   if(env>0.01){ const nc=G.add3(g.C,[0,-2*Q,1*Q]); const nr=mix(4.6*UM,4.1*UM,sm(0,15,t));
@@ -141,30 +142,27 @@ function draw(t){
   const shadow='<path class="iso-halo" d="'+K.haloOf({x:-g.dsep-g.Rm*0.8,y:-g.Rm*0.8,w:2*(g.dsep+g.Rm*0.8),d:g.Rm*1.6,r:g.Rm*0.8},SZ,1,P)+'" style="opacity:.25"/>';
   cellG.innerHTML=shadow+back+items.map((x)=>x[1]).join("")+front+ring;
   const text=phaseOf(t)+" · "+(t<0?"−"+Math.abs(t).toFixed(0):"+"+t.toFixed(0))+" min";
-  if(readout.textContent!==text) readout.textContent=text; stage.setAttribute("aria-valuenow",String(Math.round(t))); stage.setAttribute("aria-valuetext",text);
+  vitaSay(stage,readout,text); stage.setAttribute("aria-valuenow",String(Math.round(t)));
 }
-let t=30, target=30, touring=!still.matches, visible=false, frame=0, last=0, idle=0, drawn=null, hold=0, fade=1;
-function tick(now){ const dt=last?Math.min((now-last)/1000,1/30):1/60; last=now;
-  if(touring){ if(target<T1){ target=Math.min(T1,target+dt*4.2); } else { hold+=dt; if(hold>2.2){ fade=Math.max(0,fade-dt*2.5); if(fade===0){ target=T0; t=T0; hold=0; } } } if(fade<1&&hold===0) fade=Math.min(1,fade+dt*2.5); cellG.setAttribute("opacity",fade.toFixed(2)); }
-  t=still.matches?target:t+(target-t)*(1-Math.exp(-dt/0.25)); if(Math.abs(target-t)<0.01) t=target;
-  if(drawn===null||Math.abs(t-drawn)>0.02){ draw(t); drawn=t; }
-  frame=visible&&(touring||t!==target)?requestAnimationFrame(tick):0; }
-const run=()=>{ if(!frame&&visible){ last=0; frame=requestAnimationFrame(tick);} };
-const steer=(v)=>{ touring=false; fade=1; hold=0; cellG.setAttribute("opacity","1"); target=Math.max(T0,Math.min(T1,v)); clearTimeout(idle); idle=setTimeout(()=>{touring=!still.matches; run();},4500); run(); };
-new IntersectionObserver((e)=>{visible=e[e.length-1].isIntersecting; if(visible) run();},{rootMargin:"120px 0px"}).observe(stage);
-stage.addEventListener("pointermove",(e)=>{ const b=svg.getBoundingClientRect(); const s=((e.clientX-b.left)/b.width-0.15)/0.7; steer(T0+Math.min(1,Math.max(0,s))*(T1-T0)); });
-stage.addEventListener("keydown",(e)=>{ const starts=PH.map((p)=>p[1]+0.5).concat([T1]); let to=null;
-  if(e.key==="ArrowRight") to=starts.find((s)=>s>target+0.6); else if(e.key==="ArrowLeft") to=[...starts].reverse().find((s)=>s<target-0.6); else if(e.key==="Home") to=T0; else if(e.key==="End") to=T1;
-  if(to===undefined||to===null) return; e.preventDefault(); steer(to); });
-draw(t); drawn=t;
+let t=30, target=30, drawn=null, hold=0, fade=1;
+vitaLoop({ stage, idleMs:4500,
+  frame(dt,st){
+    if(st.touring){ if(target<T1){ target=Math.min(T1,target+dt*4.2); } else { hold+=dt; if(hold>2.2){ fade=Math.max(0,fade-dt*2.5); if(fade===0){ target=T0; t=T0; hold=0; } } } if(fade<1&&hold===0) fade=Math.min(1,fade+dt*2.5); cellG.setAttribute("opacity",fade.toFixed(2)); }
+    t=st.still?target:t+(target-t)*(1-Math.exp(-dt/0.25)); if(Math.abs(target-t)<0.01) t=target;
+    if(drawn===null||Math.abs(t-drawn)>0.02){ draw(t); drawn=t; } },
+  pointer(x){ fade=1; hold=0; cellG.setAttribute("opacity","1"); target=T0+x*(T1-T0); },
+  keys(key){ const starts=PH.map((p)=>p[1]+0.5).concat([T1]); let to=null;
+    if(key==="ArrowRight") to=starts.find((s)=>s>target+0.6); else if(key==="ArrowLeft") to=[...starts].reverse().find((s)=>s<target-0.6); else if(key==="Home") to=T0; else if(key==="End") to=T1;
+    if(to===undefined||to===null) return false; fade=1; hold=0; cellG.setAttribute("opacity","1"); target=to; return true; },
+});
 `;
 const body = k.plateHtml({
   fig: "Fig 03", title: "Mitosis", hint: "Hover ↔ to scrub time · ← → phase",
-  readout: "Metaphase · +30 min", keys: [{ mark: "dotted", label: "Chromatids (2n = 8), stained purple" }, { mark: "blue", label: "Nuclei" }, { mark: "lit", label: "Contractile ring" }],
-  caption: "A 14 µm rounded animal cell (ruler: 1 tick = 1 µm) with 2n = 8 chromosomes, as in the fruit fly. Mitosis takes about an hour (shown about 250× faster): the chromosomes condense in prophase, the envelope breaks and the spindle captures every kinetochore, all eight line up on the metaphase plate, then the sisters are pulled apart in about five minutes and an actomyosin ring pinches the cell in two, each daughter half the volume (0.79× the radius).",
+  readout: "Metaphase · +30 min", keys: [{ mark: "dotted", label: "Chromatids (2n = 8), stained purple" }, { mark: "blue", label: "Nuclei" }, { mark: "lit", label: "Contractile ring" }, { mark: "eosin", label: "Mitochondria, shared out" }],
+  caption: "A 14 µm rounded animal cell (ruler: 1 tick = 1 µm) with 2n = 8 chromosomes, as in the fruit fly. Mitosis takes about an hour (shown about 250× faster): the chromosomes condense in prophase, the envelope breaks and the spindle captures every kinetochore, all eight line up on the metaphase plate, then the sisters are pulled apart in about five minutes and an actomyosin ring pinches the cell in two, each daughter half the volume (0.79× the radius) and roughly half the mitochondria.",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="Mitosis: arrow keys step from phase to phase" aria-valuemin="-8" aria-valuemax="72" aria-valuenow="30">${svg}</div>`,
 });
-const page = vitaPage({ n: "03", title: "Mitosis", zh: "有丝分裂 · 细胞尺度", body, script: liveScript() + live,
-  facts: [["~60 min", "哺乳动物细胞 M 期"], ["~5 min", "后期姐妹染色单体分离"], ["~1 µm/min", "染色体被拉向两极的速度"], ["2^(−1/3)", "子细胞半径比 = 0.79"], ["~37 万亿", "人体约有的细胞数"]] });
+const page = vitaPage({ n: "03", title: "Mitosis", zh: "有丝分裂 · 细胞尺度", en: "Mitosis · cell scale", body, script: liveScript({ soft: true }) + LOOP_SRC + live,
+  facts: [["~60 min", "哺乳动物细胞 M 期", "M phase in a mammalian cell"], ["~5 min", "后期姐妹染色单体分离", "anaphase: sister chromatids separate"], ["~1 µm/min", "染色体被拉向两极的速度", "speed chromosomes are pulled poleward"], ["2^(−1/3)", "子细胞半径比 = 0.79", "daughter radius ratio = 0.79"], ["~37 trillion", "人体约有的细胞数（~37 万亿）", "cells in a human body"]] });
 writeFileSync(join(OUT, "03-mitosis.html"), page);
 console.log("wrote 03-mitosis.html", (page.length / 1024).toFixed(0) + " KB");

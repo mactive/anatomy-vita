@@ -16,6 +16,10 @@ Map the concept to an object one-to-one, and say what moves and what the motion 
 | Active transport | a two-gate airlock with leak channels beside it | "never both gates open" is the mechanism; leaks explain why it must keep running |
 | Organelle structure | a lengthwise cut teaching model on cradles | cristae read as radiator plates; the cut face shows both membranes |
 | Early development | an embryo held by a holding pipette on a coverslip | the IVF bench is the real instrument; time is the control |
+| Muscle contraction | one sarcomere as a slide rule: Z discs on sprung carriages over a ruler, filaments sliding, heads cycling (`demos/sarcomere`) | the Z lines visibly close; calcium and load are the two things you can change |
+| Differentiation (no body) | a sliced-plywood Waddington board, cells rolling into valleys behind a lift gate (`demos/differentiation`) | the landscape is the declared metaphor; the ruler measures time, not space |
+| Synaptic transmission | one synapse as a cut-open teaching model on a dendrite, with a stimulating and a recording pipette and a two-trace amplifier (`demos/synapse`) | release ∝ [Ca²⁺]⁴ shows as failures at low calcium; the EPSP trace is the measurement |
+| A joint | a teaching skeleton on cradles with a goniometer; ligaments as cords that go taut or slack (`demos/knee`) | the crossed four-bar linkage of the cruciates produces roll-back by itself |
 | Nerve impulse | a GFP neuron with a stimulating and a recording pipette and an amplifier trace | the trace is the measurement; the myelin toggle is the experiment |
 
 Rejected or weak first drafts and what fixed them:
@@ -41,7 +45,7 @@ Rejected or weak first drafts and what fixed them:
 
 ## 4. Stains
 
-`STAINS` (bio.mjs): `dapi gfp rfp eosin hema atp myelin oxy deoxy na k trna cyt`. Use `stain(name, svg, amount)`; amount 0.2–0.5 for bodies, 0.8–1 for small particles and lines. Legend keys can use stain names as marks (`{ mark: "na", label: "Na⁺" }`). One stain per meaning across the whole site (Na⁺ is always amber).
+`STAINS` (bio.mjs): `dapi gfp rfp eosin hema atp myelin oxy deoxy sodium potassium trna cyt calcium`. A stain may never be named `k`: `--stain-k` is the amount variable, and the clash turns every stained shape black. Hand-written groups in page code set both, `style="--stain:var(--stain-gfp);--stain-k:.5"`. `lit: true` inside a stain group keeps the kit's lit look, which is flat bright faces with an ink edge: use it on a rigid part (a lever, a gate, a neck linker), not on a soft stained body, where it erases the shading. Use `stain(name, svg, amount)`; amount 0.2–0.5 for bodies, 0.8–1 for small particles and lines. Legend keys can use stain names as marks (`{ mark: "sodium", label: "Na⁺" }`). One stain per meaning across the whole site (Na⁺ is always amber).
 
 ## 5. Membranes and cuts
 
@@ -75,3 +79,25 @@ Rejected or weak first drafts and what fixed them:
 2. 4× close-ups of the subject and every junction.
 3. `node bio/check.mjs site/demos/<page>.html` → `vita check passed`.
 4. For pipework or rigid assemblies, Anatomy's `--audit` as well.
+
+## 10. Patterns from the evals
+
+- **Metaphor figures.** Open the caption by saying it is a metaphor ("A metaphor, not an anatomy: …"), name its origin, and give the ruler a real quantity even if it isn't space (developmental days, time, concentration). Say "the board itself is not to scale".
+- **Anisotropic scale.** When one axis must be distorted (a sarcomere's lengths true, its cross-section ×5), distort exactly one axis and name it in the caption.
+- **Large moving populations** (myosin heads, ions on a membrane, ribosomes on an mRNA): don't rebuild geometry per frame. Prebuild a pose library in `<defs>` (one `<g id>` per pose) and swap `href` on `<use>` elements per frame. Keep each pose cheap: two `sphereOf` lobes are ~2 KB, a smooth `solidOf` lathe ~13 KB. `check.mjs` fails pages over 1.5 MB.
+- **Rigid sliding groups.** Build a moving assembly once at rest and slide it with `transform="translate(…)"` from `k.translateAlong(P, [dx, dy, dz])` (filaments, a tape, a carriage). Rebuild only what changes shape.
+- **Static and live parts in one depth order.** Put live groups into the static `scene()` as empty placeholders (`sc.put(depth, '<g data-part="x"></g>')`) at their true depth, then fill them per frame. A stand drawn last in the build ends up in front even when it stands behind.
+- **Helices and springs** come from `bio/shapes.mjs` (`helixOf`, `coilAlong`), split into back and front runs so they wrap their core.
+- **Fact values and translation.** Fact values are shown as written in both languages; prefer notation that needs no translation (`~3.6 × 10¹³`, not `~36 万亿`).
+- **A tiny key region.** If the event (a 20 nm cleft) is < ~3% of the figure, either exaggerate exactly that one dimension and name the factor ("cleft drawn 8× wide"), or add a real magnifier as part of the object (a loupe on an arm over the region). Don't shrink the rest of the bench to make room.
+- **Cutaways.** For a horizontal cut, clip the whole lathe body to the region below the rim's upper arc (`demos/mito`). For a vertical or tilted cut, clip to the screen convex hull of the half-body's surface points (`G.hullOf`, `demos/synapse`). Fill the opening with `.bio-cavity`, draw the cut-face rim on top.
+- **Glass compartments.** Wrap any solid in `<g class="bio-ghost">` to make it see-through (`demos/knee`, the lateral condyle).
+- **Jointed organs** (knee, elbow, jaw): place an anatomical frame in world space once, build each bone at rest, move a whole rigid sub-assembly per frame, and drive it from a real linkage model (the cruciates as a crossed four-bar). Ligaments and tendons are cords: straight and fully stained when taut, paler and sagging when slack.
+- **Convex only.** `G.prismOf` fills its convex hull; a concave profile (a bone outline, a C-shaped dial) must be split into convex pieces or built as ribs (`demos/differentiation`).
+- **`blobOf` merge.** Keep `merge` ≤ ~0.35 with large spheres; above that, check at 4× for stray fins.
+- **Camera.** `fitProjection(…, { elevation })` (default 30°) lowers the eye to open a slit such as a synaptic cleft.
+- **Page helpers.** In page code, `vitaStain(name, html, k)` (from `LOOP_SRC`) makes a correct stain group; `vitaPage({ paper: "#fff" })` gives a white card and page.
+- **Timed screenshots.** `node bio/tools/moments.mjs page.html out-prefix t1 t2 …` loads, optionally hovers, and captures at given times; `bio/tools/shot.mjs`, `zoom.mjs`, `scrub.mjs` cover full pages, 4× close-ups and hover sweeps.
+- **Two-dye colour.** Blood between oxy and deoxy, a sensor between states: `stainMix("deoxy", "oxy", f, svg)` at build time, `vitaStainMix` in the page, or `f = "var(--sat)"` and one `style.setProperty("--sat", …)` per frame.
+- **Shading a concave interior.** `.bio-cavity` is one flat fill; deepen toward the floor with 2–3 nested contours at `--anatomy-shade-1`/`-0` (the darkest light-theme shade is `--anatomy-shade-0`).
+- **Capillary beds** are meshes, not trees: a nearest-neighbour tube net scribbles and a lat-long net looks like wicker. Draw the bed as a stained sheet with tissue posts (Fung's sheet flow, `demos/alveolus`).

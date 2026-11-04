@@ -121,12 +121,12 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
 | 07 | 钠钾泵 | 10 nm | 双门气闸：3 Na⁺ 出、2 K⁺ 进 | 2 | ✅ v2 |
 | 08 | 线粒体 | 1 µm | 剖开的线粒体教学模型 | 2 | ✅ v2 |
 | 09 | 卵裂与囊胚 | 100 µm | 握持针下的人类胚胎，soft.mjs | 3 | ✅ v3 |
-| 10 | 细胞分化 | — | Waddington 景观（声明隐喻） | 3 | |
-| 11 | 突触传递 | 1 µm | 囊泡停靠、融合、受体开门 | 3 | |
-| 12 | 肌节收缩 | 2.5 µm | 粗细丝滑行 | 3 | |
-| 13 | 膝关节 | 10 cm | 教学骨骼模型 0–135° | 4 | |
-| 14 | 心脏 | 12 cm | 四腔剖面 + Wiggers 曲线 | 4 | |
-| 15 | 肺泡 | 200 µm | 气囊与毛细血管网 | 4 | |
+| 10 | 细胞分化 | — | Waddington 景观（声明隐喻） | 3 | ✅ v4 |
+| 11 | 突触传递 | 1 µm | 囊泡停靠、融合、受体开门 | 3 | ✅ v4 |
+| 12 | 肌节收缩 | 2.5 µm | 粗细丝滑行 | 3 | ✅ v4 |
+| 13 | 膝关节 | 10 cm | 教学骨骼模型 0–135° | 4 | ✅ v4 |
+| 14 | 心脏 | 12 cm | 四腔剖面 + Wiggers 曲线 | 4 | ✅ v4 |
+| 15 | 肺泡 | 200 µm | 气囊与毛细血管网 | 4 | ✅ v4 |
 | 16 | 肾单位 | 5 cm | 过滤与回收管路 | 4 | |
 | 17 | 反射弧/神经网络 | 1 m | 膝跳反射时序 | 5 | |
 | 18 | 循环系统 | 1.7 m | 双回路管网 | 5 | |
@@ -194,3 +194,19 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
   分裂时间随代数逐渐不同步；day 3.05–3.55 致密化（press 0.02→0.16、膜线淡出）；day 4.55 起囊胚腔打开，
   14 个内细胞团 + 50 个滋养层，近半滋养层虚化、腔内液体、切口环；day 5–5.6 扩张、透明带变薄。56–59 fps
 - `demos/lab`：原语试验台页面
+
+### v4（2026-11-04 下午）—— 用 skill 盲测 + 重做旧图 + 合并本地双语
+- **盲测（eval）**：6 个全新 agent 只读 SKILL.md 各做一张图，全部 `vita check passed`：
+  10 细胞分化（层板沃丁顿地形板，声明隐喻）、11 突触（剖开突触 + 双电极 + 双迹放大器）、12 肌节（滑尺 + 弹簧滑车 + 128 个横桥 `<use>` 姿态库）、
+  13 膝关节（交叉四连杆 → 股骨后滚，韧带束松紧，ACL/PCL 断裂切换）、14 心脏（弹性腔 + Windkessel 模型、导管 + Wiggers 曲线）、
+  15 肺泡（赤道剖开、红细胞 Hill 曲线变色、运动/纤维化）
+- **按反馈改 skill**：lit 在染色组内生效（并注明只用于刚性件）；plinth 尺可沿 y；新染料 calcium / transmitter；`stainMix` / `vitaStainMix`；
+  `vitaStain`；`vitaPage({ paper })`；`.bio-ghost` 玻璃件；`lowerHalfClip`；`bio/shapes.mjs`（`helixOf` / `coilAlong`，SH）；
+  `blobOf` 网格边距随 merge 放大（修掉"鳍片"）；`bio/tools/`（shot / zoom / scrub / moments / thumbs）；
+  check.mjs 新列 ink / size / fit（fit 按实际绘制 + 变换 + clip-path 计算），facts 必须中英双语，time 正则收紧；
+  文档：保留的页面全局名、指针 12–88% 映射、隐喻图、单轴夸张、微小关键区、剖切、关节器官、姿态库、毛细血管床、凹腔着色
+- **自查出的真 bug**：染料名 `k` 与 `--stain-k`（染色强度变量）冲突 → 所有未显式设强度的染色组变黑（03 染色体）。改名 sodium/potassium，bio.mjs 拒绝 `k`，check 加 ink 列
+- **重做旧图**：03 有丝分裂改用 `SOFT.blobOf` 膜 + 线粒体在分裂时分配到两个子细胞；04 神经元树突改用 `branch.mjs`（Murray 半径、球形三通、棘头）；
+  01/02/03/04 全部改用 `vitaLoop`；09 修掉越出卡片的握持针、去掉软体上的 lit
+- **合并本地会话（Claude Code）的改动**：双语外壳（`t()`、`LANG_*`、`vitaPage` 的 `en` 与三元组 facts）、build-index 双语版、缩略图、LICENSE、wrangler.jsonc
+- 下一步：16 肾单位、17 反射弧、18 循环、19 免疫、20 人体总装（Epic，需确认）、21–22 星球；可补 `cutShell` / `netOf`（毛细血管网）/ `planeFace` / 页面端 scene

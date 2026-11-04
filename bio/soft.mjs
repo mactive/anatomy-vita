@@ -101,7 +101,7 @@ export function blobOf(spheres, P, { merge = 0.35, step = 1.1 } = {}) {
   const C = circlesOf(spheres, P);
   const { light } = basisOf(P);
   const kk = merge * Math.max(...C.map((c) => c.r)); // blend width in px
-  const g = gridFor(C, step, 4);
+  const g = gridFor(C, step, Math.ceil(kk / step) + 4); // the blend can bulge past the spheres by up to kk/4
   const inside = sheet(g, -1), lit = sheet(g, -2);
   for (let j = 0; j < g.ny; j++) for (let i = 0; i < g.nx; i++) {
     const px = g.x0 + i * step, py = g.y0 + j * step;

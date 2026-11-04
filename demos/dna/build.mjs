@@ -4,7 +4,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { k, G, liveScript, RNG_SRC, plinth, standRod, vitaPage } from "../../bio/bio.mjs";
+import { k, G, liveScript, LOOP_SRC, RNG_SRC, plinth, standRod, vitaPage } from "../../bio/bio.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "../../site/demos");
@@ -36,7 +36,6 @@ const PURINE = {A:1,G:1,C:0,T:0};
 const V = G.viewOf(P);
 const stage = document.querySelector(".iso-stage"), svg = stage.querySelector("svg");
 const mol = svg.querySelector('[data-part="molecule"]'), readout = document.querySelector("[data-readout]");
-const still = matchMedia("(prefers-reduced-motion: reduce)");
 const W_SPLIT = 8, LEAD = 2.6, LAG = 6.5, FRAG = 9, FMIN = 20, FMAX = N - 7;
 const smooth = (x) => x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x);
 const delta = 2.45; // minor-groove offset between the two glycosidic bonds
@@ -111,27 +110,21 @@ function build(f) {
   mol.innerHTML = items.map((x) => x[1]).join("");
   const lead = Math.max(0, Math.floor(f - LEAD) + 1), frags = Math.max(0, Math.floor((f - LAG) / FRAG) + 1);
   const text = "fork at bp " + f.toFixed(1) + " · " + lead + " bp copied · " + (f / BPT).toFixed(2) + " turns unwound · " + frags + " Okazaki";
-  if (readout.textContent !== text) readout.textContent = text;
-  stage.setAttribute("aria-valuetext", text); stage.setAttribute("aria-valuenow", String(Math.round(f)));
+  vitaSay(stage, readout, text); stage.setAttribute("aria-valuenow", String(Math.round(f)));
 }
-let f = 30, target = 30, clock = 0, touring = !still.matches, visible = false, frame = 0, last = 0, idle = 0, drawn = -1, paused = false;
+let f = 30, target = 30, tclock = 0, drawn = -1, paused = false;
 const tourAt = (t) => FMIN + (FMAX - FMIN) * (0.5 - 0.5 * Math.cos(t * 2 * Math.PI / 40));
-function tick(now) {
-  const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 1 / 60; last = now;
-  if (touring && !paused) { clock += dt; target = tourAt(clock); }
-  f = still.matches ? target : f + (target - f) * (1 - Math.exp(-dt / 0.35));
-  if (Math.abs(target - f) < 0.002) f = target;
-  if (Math.abs(f - drawn) > 0.004) { build(f); drawn = f; }
-  frame = visible && (touring && !paused || f !== target) ? requestAnimationFrame(tick) : 0;
-}
-const run = () => { if (!frame && visible) { last = 0; frame = requestAnimationFrame(tick); } };
-const steer = (to) => { touring = false; target = Math.min(FMAX, Math.max(FMIN, to)); clearTimeout(idle); idle = setTimeout(() => { if (!still.matches) { touring = true; clock = Math.acos(Math.max(-1, Math.min(1, 1 - 2 * (f - FMIN) / (FMAX - FMIN)))) * 40 / (2 * Math.PI); run(); } }, 4000); run(); };
-new IntersectionObserver((e) => { visible = e[e.length - 1].isIntersecting; if (visible) run(); }, { rootMargin: "120px 0px" }).observe(stage);
-stage.addEventListener("pointermove", (e) => { const b = svg.getBoundingClientRect(); const s = ((e.clientX - b.left) / b.width - 0.2) / 0.6; steer(FMIN + Math.min(1, Math.max(0, s)) * (FMAX - FMIN)); });
-stage.addEventListener("keydown", (e) => {
-  if (e.key === "ArrowRight") steer(Math.round(target) + 1); else if (e.key === "ArrowLeft") steer(Math.round(target) - 1);
-  else if (e.key === " ") { paused = !paused; touring = true; run(); } else return; e.preventDefault(); });
-build(f); drawn = f;
+vitaLoop({ stage, idleMs: 4000,
+  frame(dt, st) {
+    if (st.touring && !paused) { tclock += dt; target = tourAt(tclock); }
+    f = st.still ? target : f + (target - f) * (1 - Math.exp(-dt / 0.35));
+    if (Math.abs(target - f) < 0.002) f = target;
+    if (Math.abs(f - drawn) > 0.004) { build(f); drawn = f; } },
+  pointer(x) { target = FMIN + x * (FMAX - FMIN); },
+  keys(key) { if (key === "ArrowRight") { target = Math.min(FMAX, Math.round(target) + 1); return true; } if (key === "ArrowLeft") { target = Math.max(FMIN, Math.round(target) - 1); return true; }
+    if (key === " ") { paused = !paused; return true; } return false; },
+  resume() { tclock = Math.acos(Math.max(-1, Math.min(1, 1 - 2 * (f - FMIN) / (FMAX - FMIN)))) * 40 / (2 * Math.PI); },
+});
 `;
 
 const body = k.plateHtml({
@@ -140,7 +133,7 @@ const body = k.plateHtml({
   caption: "B-DNA at true scale on the ruler (1 major tick = 1 nm): 2 nm wide, 0.34 nm per base pair, 10.5 base pairs per turn. Each purine (A, G) reaches further across than a pyrimidine (T, C), so every pair is the same width; A–T holds by two hydrogen bonds, G–C by three. The leading strand is copied right up to the fork, the lagging strand backwards in fragments (here 9 bp; really 100–200 nt in human cells) that leave nicks between them. The tour moves the fork about 1 bp a second, roughly 1,000× slower than in E. coli.",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="Replication fork: arrow keys move the fork one base pair" aria-valuemin="20" aria-valuemax="43" aria-valuenow="30">${svg}</div>`,
 });
-const page = vitaPage({ n: "01", title: "DNA replication fork", zh: "DNA 复制叉 · 分子尺度", body, script: liveScript() + live,
-  facts: [["2 nm", "双螺旋直径"], ["0.34 nm", "每碱基对上升"], ["10.5 bp", "每一圈"], ["~1,000 bp/s", "大肠杆菌复制叉速度"], ["~50 bp/s", "人类复制叉速度"]] });
+const page = vitaPage({ n: "01", title: "DNA replication fork", zh: "DNA 复制叉 · 分子尺度", en: "DNA replication fork · molecular scale", body, script: liveScript() + LOOP_SRC + live,
+  facts: [["2 nm", "双螺旋直径", "helix diameter"], ["0.34 nm", "每碱基对上升", "rise per base pair"], ["10.5 bp", "每一圈", "base pairs per turn"], ["~1,000 bp/s", "大肠杆菌复制叉速度", "E. coli fork speed"], ["~50 bp/s", "人类复制叉速度", "human fork speed"]] });
 writeFileSync(join(OUT, "01-dna.html"), page);
 console.log("wrote 01-dna.html", (page.length / 1024).toFixed(0) + " KB");

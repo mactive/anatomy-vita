@@ -17,7 +17,7 @@ const ZI = 58 * UM, ZO = 73 * UM; // zona pellucida inner / outer (~15 µm thick
 const GLASS = 3;
 const C = [40, 0, GLASS + ZO];
 const PLATE = { x: -300, y: -150, w: 470, d: 300, r: 12 };
-const P = k.fitProjection([...k.boxCorners(PLATE, -15, 0), [C[0], C[1], C[2] + ZO * 1.25], [C[0] + ZO, C[1] + ZO, C[2]], [-260, 0, C[2] + 60]], W, H, { pad: 14, azimuth: 38 });
+const P = k.fitProjection([...k.boxCorners(PLATE, -15, 0), [C[0], C[1], C[2] + ZO * 1.25], [C[0] + ZO, C[1] + ZO, C[2]], [-262, 0, C[2] + 66], [-230, 0, C[2] + 66]], W, H, { pad: 14, azimuth: 38 });
 const S = (paths, style) => k.solidSvg(paths, style);
 const L = (d, style) => k.lineSvg(d, style);
 const D = (points, style) => k.dotsSvg(points, style);
@@ -71,17 +71,17 @@ function bench() {
 }
 // holding pipette: OD ~80 µm glass, fire-polished tip, ~15 µm lumen, bent so its last length lies flat
 const PR = 40 * UM * 0.5, TIP = [C[0] - ZO - PR * 0.15, 0, C[2]];
-const route = G.fillet([[-250, 0, C[2] + 70], [-150, 0, C[2] + 14], [TIP[0] - 60, 0, C[2]], TIP], 40, 10);
+const route = G.fillet([[-250, 0, C[2] + 34], [-150, 0, C[2] + 8], [TIP[0] - 60, 0, C[2]], TIP], 40, 10);
 function pipette() {
   const sc = scene(P);
   sc.tube(G.resample(route, 1.5), PR, { tone: "mid" }, { maxLength: 60, wrap: (h) => `<g class="bio-pipette">${h}</g>` });
   const F = G.frameAlong(TIP, [1, 0, 0]);
   sc.put(k.depthOf(TIP, P) + 1, `<path class="bio-lumen" d="${G.circleOf(F, 0, 7.5 * UM, P)}"/>` + L(G.circleOf(F, 0, 7.5 * UM, P), { tone: "mid" }));
   // manipulator: a collar clamped on the glass, on a stand
-  const back = [-250, 0, C[2] + 70], dir = G.unit3(G.sub3(route[1], route[0]));
+  const back = [-250, 0, C[2] + 34], dir = G.unit3(G.sub3(route[1], route[0]));
   const Fc = G.frameAlong(G.sub3(back, G.mul3(dir, 6)), dir);
   sc.put(k.depthOf(back, P) - 2, S(G.disc(0, 30, PR + 5, Fc, P), { tone: "mid" }) + L(G.ribsOf(Fc, 4, 26, PR + 5, 24, P), { tone: "faint" }));
-  return standRod(-262, 0, C[2] + 58, P, { r: 3.2, clampAt: C[2] + 30 }) + sc.svg();
+  return standRod(-262, 0, C[2] + 22, P, { r: 3.2, clampAt: C[2] - 6 }) + sc.svg();
 }
 
 const svg = k.figureSvg({
@@ -132,14 +132,14 @@ function draw(t){
   const solid=cs.filter((c)=>!near(c)&&!isIcm(c)).map((c)=>c.slice(0,4)), ghost=cs.filter(near).map((c)=>c.slice(0,4)), inner=cs.filter(isIcm).map((c)=>c.slice(0,4));
   const seam=1-0.6*compact(t);
   let h="";
-  if(solid.length) h+='<g class="bio-stain" style="--stain:var(--stain-hema);--stain-k:.32">'+SOFT.clusterSvg(SOFT.clusterOf(solid,P,{press:pr,step:1.5}),{tone:"hi",lit:cs.length===1},{seamOpacity:seam})+'</g>';
+  if(solid.length) h+='<g class="bio-stain" style="--stain:var(--stain-hema);--stain-k:.32">'+SOFT.clusterSvg(SOFT.clusterOf(solid,P,{press:pr,step:1.5}),{tone:"hi"},{seamOpacity:seam})+'</g>';
   // polar bodies until they fade on day 3
   const pb=1-ease((t-2.6)/0.6); if(pb>0.02) h=POLARS.map((p)=>'<g opacity="'+pb.toFixed(2)+'">'+K.solidSvg(G.sphereOf(G.add3(C,p),5*UM,P),{tone:"hi"})+'</g>').join("")+h;
   // the blastocoel: fluid over the far wall, the inner cell mass on top of it, and the cut edge of the shell
   if(cv>0.25){ const e=1+0.18*expand(t); const Fv=G.frameAlong(C,G.viewOf(P)); const rr=(ZI-15*UM*0.85)*e;
     const k=ease((cv-0.25)/0.5);
     h+='<path class="bio-blastocoel" style="opacity:'+(0.6*k).toFixed(2)+'" d="'+G.circleOf(Fv,0,rr-6,P)+'"/>';
-    if(inner.length) h+='<g class="bio-stain" style="--stain:var(--stain-hema);--stain-k:.55">'+SOFT.clusterSvg(SOFT.clusterOf(inner,P,{press:0.12,step:1.3}),{tone:"hi",lit:true},{seamOpacity:0.7})+'</g>';
+    if(inner.length) h+='<g class="bio-stain" style="--stain:var(--stain-hema);--stain-k:.55">'+SOFT.clusterSvg(SOFT.clusterOf(inner,P,{press:0.12,step:1.3}),{tone:"hi"},{seamOpacity:0.7})+'</g>';
     h+='<g style="opacity:'+k.toFixed(2)+'">'+K.lineSvg(G.circleOf(Fv,0,rr+15*UM*0.4,P),{tone:"mid"})+K.lineSvg(G.circleOf(Fv,0,rr-6,P),{tone:"lo"})+'</g>'; }
   if(ghost.length) h+='<g opacity="'+(0.07+0.6*(1-ease((cv-0.25)/0.5))).toFixed(2)+'"><g class="bio-stain" style="--stain:var(--stain-hema);--stain-k:.32">'+SOFT.clusterSvg(SOFT.clusterOf(ghost,P,{press:pr,step:1.8}),{tone:"hi"},{seamOpacity:seam})+'</g></g>';
   cellsG.innerHTML=h;
@@ -160,11 +160,11 @@ vitaLoop({ stage, idleMs:5000,
 `;
 const body = k.plateHtml({
   fig: "Fig 09", title: "Cleavage", hint: "Hover ↔ days 0–5.6",
-  readout: "day 0.3 · zygote · 1 cells", keys: [{ mark: "lit", label: "The zygote, later the inner cell mass" }, { mark: "hema", label: "Blastomeres, trophectoderm, inner cell mass" }, { mark: "raised", label: "Zona pellucida; holding pipette" }],
+  readout: "day 0.3 · zygote · 1 cells", keys: [{ mark: "hema", label: "Zygote and blastomeres; later trophectoderm and the darker inner cell mass" }, { mark: "raised", label: "Zona pellucida; holding pipette" }],
   caption: "A human embryo at true scale (ruler: 1 tick = 10 µm): a zygote about 110 µm across in a zona pellucida about 15 µm thick, held by a fire-polished holding pipette as in an IVF lab. Cleavage divides without growth, so every division halves cell volume and cells shrink to 0.79× their mother's radius. From the 4-cell stage the divisions drift out of step. Around day 3–4 the cells compact: they flatten against each other and their borders fade. From day 4.5 the outer cells pump sodium inward, water follows, and a cavity opens: the trophectoderm becomes a shell (its near half cut away here) and the inner cell mass, the future embryo proper, gathers at one pole. By day 5.5 the blastocyst swells and thins the zona before hatching. Timings are typical IVF averages; real embryos vary by hours.",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="Embryo: arrow keys move through days 0 to 5.6" aria-valuemin="0" aria-valuemax="5.6" aria-valuenow="0.3">${svg}</div>`,
 });
-const page = vitaPage({ n: "09", title: "Cleavage → blastocyst", zh: "卵裂与囊胚 · 握持针下的胚胎", body, script: liveScript({ soft: true }) + LOOP_SRC + live,
-  facts: [["~110 µm", "人类合子（不含透明带）"], ["×0.79", "每次卵裂后细胞半径（体积减半）"], ["day 3–4", "致密化（8–16 细胞）"], ["day 5", "囊胚，约 70–100 个细胞"], ["~20–30%", "内细胞团所占比例"], ["day 6–7", "孵化出透明带、着床"]] });
+const page = vitaPage({ n: "09", title: "Cleavage → blastocyst", zh: "卵裂与囊胚 · 握持针下的胚胎", en: "Cleavage → blastocyst · an embryo on a holding pipette", body, script: liveScript({ soft: true }) + LOOP_SRC + live,
+  facts: [["~110 µm", "人类合子（不含透明带）", "human zygote (without zona)"], ["×0.79", "每次卵裂后细胞半径（体积减半）", "cell radius after each cleavage (half the volume)"], ["day 3–4", "致密化（8–16 细胞）", "compaction (8–16 cells)"], ["day 5", "囊胚，约 70–100 个细胞", "blastocyst, ~70–100 cells"], ["~20–30%", "内细胞团所占比例", "share in the inner cell mass"], ["day 6–7", "孵化出透明带、着床", "hatching from the zona, implantation"]] });
 writeFileSync(join(OUT, "09-cleavage.html"), page);
 console.log("wrote 09-cleavage.html", (page.length / 1024).toFixed(0) + " KB", "cells per gen", gens.map((g) => g.length).join(","));

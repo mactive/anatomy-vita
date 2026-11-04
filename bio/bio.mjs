@@ -19,10 +19,11 @@ function moduleAsNamespace(file, name, imports) {
   src = src.replace(/^export (async function|function|const|let|class) ([A-Za-z0-9_$]+)/gm, (_, kind, id) => { names.push(id); return `${kind} ${id}`; });
   return `const ${name} = (() => {\n${imports}\n${src}\nreturn { ${names.join(", ")} };\n})();\n`;
 }
-export function liveScript({ soft = false, branch = false } = {}) {
+export function liveScript({ soft = false, branch = false, shapes = false } = {}) {
   return moduleAsNamespace("kit/iso-kit.mjs", "K", "") + moduleAsNamespace("kit/lathe.mjs", "G", "const { cameraOf, iso, pathOf } = K;") + moduleAsNamespace("kit/tube.mjs", "T", "const { iso, pathOf } = K;")
     + (soft ? moduleAsNamespace("bio/soft.mjs", "SOFT", "") : "")
-    + (branch ? moduleAsNamespace("bio/branch.mjs", "BR", "const { tubePieces, tubeSvg } = T;") : "");
+    + (branch ? moduleAsNamespace("bio/branch.mjs", "BR", "const { tubePieces, tubeSvg } = T;") : "")
+    + (shapes ? moduleAsNamespace("bio/shapes.mjs", "SH", "") : "");
 }
 
 // 2. Seeded variation: no two cells are the same, but every build is.
@@ -30,8 +31,12 @@ export function rng(seed = 1) { let s = seed >>> 0 || 1; return () => ((s = (s *
 export const RNG_SRC = `function rng(seed){let s=seed>>>0||1;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296);}`;
 
 // 3. Stains: colour only where colour is the subject. The four tones stay; each is mixed toward the stain.
-export const STAINS = { dapi: "#3b5bdb", gfp: "#2b8a3e", rfp: "#e03131", eosin: "#d6336c", hema: "#5f3dc4", atp: "#e8590c", myelin: "#b08d3c", oxy: "#c92a2a", deoxy: "#364fc7", na: "#f08c00", k: "#7048e8", trna: "#0c8599", cyt: "#c2255c" };
+export const STAINS = { dapi: "#3b5bdb", gfp: "#2b8a3e", rfp: "#e03131", eosin: "#d6336c", hema: "#5f3dc4", atp: "#e8590c", myelin: "#b08d3c", oxy: "#c92a2a", deoxy: "#364fc7", sodium: "#f08c00", potassium: "#7048e8", trna: "#0c8599", cyt: "#c2255c", calcium: "#82c91e", transmitter: "#9c36b5" }; // calcium: a Fluo/GCaMP-style indicator; transmitter: a neurotransmitter sensor (iGluSnFR-style)
+if ("k" in STAINS) throw new Error("a stain may not be named k: --stain-k is the stain amount");
 export const stain = (name, svg, amount = 1) => `<g class="bio-stain" style="--stain:var(--stain-${name});--stain-k:${amount}">${svg}</g>`;
+// a blend of two dyes (oxy ↔ deoxy blood, a sensor's two states): f = 0 → all a, 1 → all b. f may be a CSS expression
+// such as "var(--sat)" so the page can change the colour live with one style.setProperty on an ancestor.
+export const stainMix = (a, b, f, svg, amount = 1) => `<g class="bio-stain" style="--stain:color-mix(in oklab,var(--stain-${a}),var(--stain-${b}) calc(${f} * 100%));--stain-k:${amount}">${svg}</g>`;
 
 // 4. Membranes you can see into: a shell in two halves. back() before the contents, front() after.
 export function shellOf(centre, r, P, { steps = 72 } = {}) {
@@ -64,11 +69,14 @@ export function plinth(PLATE, P, { h = 10, foot = 5, scale = null, label = null 
   out.push(L(screws.map(([x, y]) => k.ring(x, y, 2.2, 0, P, 16)).join(""), { tone: "lo" }));
   out.push(D(screws.map(([x, y]) => at([x, y, 0])), { size: 0.5 }));
   if (scale) { // one tick per true unit of the specimen (nm, µm, mm)
-    const strip = { x: scale.x, y: scale.y, w: scale.w, d: 7, r: 1 };
+    const ya = scale.axis === "y"; // the ruler can run along y (e.g. a time axis that runs front to back)
+    const strip = ya ? { x: scale.x, y: scale.y, w: 7, d: scale.w, r: 1 } : { x: scale.x, y: scale.y, w: scale.w, d: 7, r: 1 };
     out.push(S(k.slabOf(strip, 0, 0.6, P, 3), { tone: "lo", crease: "none" }));
-    const t = k.topTicks(strip.x + 3, strip.x + strip.w - 3, scale.step, scale.every, strip.y + 0.8, 0.6, [2, 3.8], P);
+    const t = ya ? k.topTicks(strip.y + 3, strip.y + strip.d - 3, scale.step, scale.every, strip.x + 0.8, 0.6, [2, 3.8], P, "y")
+                 : k.topTicks(strip.x + 3, strip.x + strip.w - 3, scale.step, scale.every, strip.y + 0.8, 0.6, [2, 3.8], P);
     out.push(L(t.minor, { tone: "lo" }), L(t.major, { tone: "mid" }));
-    out.push(D([at([strip.x + 1.6, strip.y + 3.5, 0.6]), at([strip.x + strip.w - 1.6, strip.y + 3.5, 0.6])], { size: 0.45 }));
+    const ends = ya ? [[strip.x + 3.5, strip.y + 1.6], [strip.x + 3.5, strip.y + strip.d - 1.6]] : [[strip.x + 1.6, strip.y + 3.5], [strip.x + strip.w - 1.6, strip.y + 3.5]];
+    out.push(D(ends.map(([x, y]) => at([x, y, 0.6])), { size: 0.45 }));
   }
   if (label) {
     const plate = { x: label.x, y: label.y, w: label.w ?? 34, d: label.d ?? 12, r: 1.4 };
@@ -104,6 +112,12 @@ ${mix(".bio-stain .tb-shade", "fill", "--anatomy-shade-0", 45)}
 ${mix(".bio-stain .tb-edge", "stroke", "--anatomy-hi", 50)}
 ${mix(".bio-stain .iso-line:not(.tb-edge)", "stroke", "--anatomy-mid", 60)}
 .bio-stain .iso-dots circle{fill:var(--stain)}
+${mix(".bio-stain .iso-solid[data-lit]>.iso-fill", "fill", "--anatomy-face", 15)}
+${mix(".bio-stain .iso-solid[data-lit]>.iso-top", "fill", "--anatomy-lit-top", 15)}
+${mix(".bio-stain .iso-solid[data-lit]>.iso-shade", "fill", "--anatomy-lit-shade", 15)}
+${mix(".bio-stain .iso-solid[data-seamless][data-lit]>.iso-top", "stroke", "--anatomy-lit-top", 15)}
+${mix(".bio-stain .iso-solid[data-seamless][data-lit]>.iso-shade", "stroke", "--anatomy-lit-shade", 15)}
+${mix(".bio-stain .iso-solid[data-lit]>.iso-edge", "stroke", "--anatomy-lit", 15)}
 ${Object.keys(STAINS).map((n) => `.iso-swatch[data-mark="${n}"] path{stroke:var(--stain-${n});stroke-width:2.2}`).join("\n")}
 .bio-shell-back .iso-fill{fill:color-mix(in oklab,var(--anatomy-paper),var(--anatomy-shade-1) 30%)}
 .bio-shell-tone{fill:var(--anatomy-paper);opacity:.35}
@@ -116,6 +130,9 @@ ${Object.keys(STAINS).map((n) => `.iso-swatch[data-mark="${n}"] path{stroke:var(
 .bio-zona-back{opacity:.5}
 .bio-pipette .tb-body,.bio-pipette .tb-shade{opacity:.75}
 .bio-blastocoel{fill:color-mix(in oklab,var(--anatomy-paper),var(--stain-dapi) 10%)}
+.bio-cell-back{opacity:.55}
+.bio-ghost .iso-fill,.bio-ghost .iso-top,.bio-ghost .iso-shade{fill-opacity:.28;stroke-opacity:.28}
+.bio-ghost .iso-edge,.bio-ghost .iso-line{stroke-opacity:.55}
 .bio-membrane{stroke-width:calc(var(--anatomy-weight) * 1.7)}
 .vita-nav{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:0 0 18px;font:12px/1.4 var(--anatomy-mono,ui-monospace),monospace;letter-spacing:.06em;color:var(--anatomy-muted);text-transform:uppercase}
 .vita-nav a{color:var(--anatomy-text);text-decoration:none}
@@ -127,11 +144,40 @@ body.vita-embed .iso-page{margin:10px auto}
 `;
 
 // 7. A figure page: nav, card, true facts; ?embed hides the chrome for the essay page.
-export function vitaPage({ n, title, zh, body, script, facts = [], theme = "light", width = 760 }) {
-  const nav = `<nav class="vita-nav"><a href="../index.html">← Anatomy Vita</a><span>${n} · ${zh}</span></nav>`;
-  const factHtml = facts.length ? `<div class="vita-facts">${facts.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join("")}</div>` : "";
-  const embed = `if(new URLSearchParams(location.search).has("embed")||location.hash==="#embed")document.body.classList.add("vita-embed");`;
-  return k.pageHtml({ title: `${title} · Anatomy Vita`, theme, width, body: `<style>${BIO_CSS}</style>${nav}${body}${factHtml}`, script: embed + "\n" + script });
+//   facts: [value, 中文说明, English label]; zh / en: the page subtitle in each language.
+export function vitaPage({ n, title, zh, en = title, body, script, facts = [], theme = "light", width = 760 , paper = null}) {
+  const nav = `<nav class="vita-nav"><a href="../index.html">← Anatomy Vita</a><span>${n} · ${t(zh, en)}${LANG_BUTTON}</span></nav>`;
+  const factHtml = facts.length ? `<div class="vita-facts">${facts.map(([v, lz, le = lz]) => `<span><b>${v}</b>${t(lz, le)}</span>`).join("")}</div>` : "";
+  const embed = `if(new URLSearchParams(location.search).has("embed")||/(^#|&)embed(&|$)/.test(location.hash))document.body.classList.add("vita-embed");`;
+  return k.pageHtml({ title: `${title} · Anatomy Vita`, theme, width, body: `<script>${LANG_SRC}</script><style>${BIO_CSS}${LANG_CSS}${paper ? `body.iso{--anatomy-page:${paper};--anatomy-card:${paper}}` : ""}</style>${nav}${body}${factHtml}`, script: embed + "\n" + script });
+}
+
+// 7b. (v3) Bilingual: every shell string carries both languages; one attribute on <html> picks which shows.
+//   Order: ?lang= / #lang= → saved choice → browser language (zh* → Chinese) → English. Same-origin frames follow the toggle live.
+export const t = (zh, en, tag = "span") => `<${tag} class="l-zh" lang="zh-CN">${zh}</${tag}><${tag} class="l-en" lang="en">${en}</${tag}>`;
+export const LANG_CSS = `html:not([data-lang=zh]) .l-zh,html[data-lang=zh] .l-en{display:none!important}
+.vita-lang{margin-left:12px;font:inherit;letter-spacing:inherit;text-transform:none;color:inherit;background:none;border:1px solid currentColor;border-radius:3px;padding:1px 6px;cursor:pointer;opacity:.75}
+.vita-lang:hover{opacity:1}`;
+export const LANG_BUTTON = `<button type="button" class="vita-lang" onclick="vitaLang(document.documentElement.dataset.lang==='zh'?'en':'zh',true)" aria-label="Switch language / 切换语言">${t("EN", "中文")}</button>`;
+export const LANG_SRC = `(function(){
+  var KEY="vita-lang";
+  function store(v){try{if(v)localStorage.setItem(KEY,v);return localStorage.getItem(KEY)}catch(e){return null}}
+  window.vitaLang=function(l,save){l=l==="zh"?"zh":"en";var h=document.documentElement;h.dataset.lang=l;h.lang=l==="en"?"en":"zh-CN";if(save)store(l);};
+  var m=(location.search+"&"+location.hash).match(/[?&#]lang=(en|zh)/);
+  vitaLang(m?m[1]:store()||(/^zh/i.test(navigator.language||"")?"zh":"en"),!!m);
+  addEventListener("storage",function(e){if(e.key===KEY&&e.newValue)vitaLang(e.newValue);});
+})();`;
+
+// 7c. (v4) Cutaway helper: the screen region where the lower half of a body cut by the plane z can show — everything
+// under the upper arc of the cut rim. ring = [[x, y], ...] the cut outline in that plane. Use it as a clipPath for the
+// whole body (demos/mito, demos/heart). For a vertical cut, clip to G.hullOf of the kept half's surface points instead.
+export function lowerHalfClip(ring, z, P) {
+  const sp = ring.map(([x, y]) => k.iso([x, y, z], P));
+  let lo = 0, hi = 0; sp.forEach((p, i) => { if (p[0] < sp[lo][0]) lo = i; if (p[0] > sp[hi][0]) hi = i; });
+  const n = sp.length; const walk = (a, b, d) => { const out = []; for (let i = a; ; i = (i + d + n) % n) { out.push(sp[i]); if (i === b) break; } return out; };
+  const c1 = walk(lo, hi, 1), c2 = walk(lo, hi, -1); const mean = (c) => c.reduce((s, p) => s + p[1], 0) / c.length;
+  const upper = mean(c1) < mean(c2) ? c1 : c2;
+  return k.pathOf([...upper, [sp[hi][0], 4000], [sp[lo][0], 4000]], true);
 }
 
 // 8. (v2) A depth collector. Everything that can overlap goes in with its depth; svg() paints back to front.
@@ -170,6 +216,8 @@ function vitaLoop(o){
   o.frame(0,st);
   return { run, takeOver, st };
 }
+function vitaStainMix(a, b, f, html, k){ return '<g class="bio-stain" style="--stain:color-mix(in oklab,var(--stain-'+a+'),var(--stain-'+b+') '+(100*f).toFixed(1)+'%);--stain-k:'+(k==null?1:k)+'">'+html+'</g>'; }
+function vitaStain(name, html, k){ return '<g class="bio-stain" style="--stain:var(--stain-'+name+');--stain-k:'+(k==null?1:k)+'">'+html+'</g>'; }
 function vitaSay(stage, readout, text){ if(readout.textContent!==text) readout.textContent=text; stage.setAttribute("aria-valuetext",text); }
 `;
 

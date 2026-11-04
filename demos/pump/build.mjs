@@ -19,7 +19,7 @@ const HX = 22, HY = 15; // half sizes of the housing (≈ 7 × 5 nm)
 const WALL = 4.2;
 const GZ0 = MZ0 - 10, GZ1 = MZ1 + 6; // gates sit just outside the bilayer
 const NOTCH = { x0: C[0] - HX - 2, x1: C[0] + HX + 2, y0: C[1] - HY - 2 };
-const LEAK = { k: [-56, -30], na: [52, -36] };
+const LEAK = { potassium: [-56, -30], sodium: [52, -36] }; // keys are stain names
 const P = k.fitProjection([...k.boxCorners(PLATE, -15, 0), [MEM.x0, MEM.y0, MZ1 + 42], [MEM.x1, MEM.y1, MZ1 + 42]], W, H, { pad: 22, azimuth: 48 });
 const at = (p) => k.iso(p, P);
 const S = (paths, style) => k.solidSvg(paths, style);
@@ -84,7 +84,7 @@ const rails = S(k.slabOf({ x: BR - 2, y: hy0 + 1, w: 6, d: 2 * HY - 2, r: 1 }, M
   + [hy0 + 3, hy1 - 3].map((y) => S(G.disc(0, BR + 2 - hx0, 1.4, G.frameAlong([hx0, y, GZ1 - 1.4], [1, 0, 0]), P), { tone: "mid", crease: "none" })).join("")
   + D([at([BR + 1, hy0 + 3, GZ1 - 1.6]), at([BR + 1, hy1 - 3, GZ1 - 1.6])], { size: 0.5 });
 // the site pockets on the back wall: three for Na⁺, two for K⁺
-const SITES = { na: [[-11, MZ0 + 9], [0, MZ0 + 9], [11, MZ0 + 9]], k: [[-6, MZ0 + 17], [6, MZ0 + 17]] };
+const SITES = { sodium: [[-11, MZ0 + 9], [0, MZ0 + 9], [11, MZ0 + 9]], potassium: [[-6, MZ0 + 17], [6, MZ0 + 17]] };
 const pockets = Object.entries(SITES).map(([n, list]) => stain(n, D(list.map(([x, z]) => at([C[0] + x, hy0 + WALL + 0.1, z])), { size: 2.6, tone: "faint" }), 0.35)).join("");
 // P-domain under the housing, where ATP docks (Asp369 in the real enzyme)
 const PD = [C[0] - 8, C[1] - 4, GZ0 - 12];
@@ -119,11 +119,12 @@ const OUTZ=[MZ1+8,MZ1+40], INZ=[8,MZ0-12];
 const inRegion=(z)=>z<MZ0;
 const ions=[]; // {kind, where:'out'|'in'|'site'|'move', p, path, t, dur, then}
 function spawn(kind,where,n){ for(let i=0;i<n;i++){ const z=where==="out"?OUTZ[0]+rand()*(OUTZ[1]-OUTZ[0]):INZ[0]+rand()*(INZ[1]-INZ[0]); let x,y; do{ x=MEM.x0+8+rand()*(MEM.x1-MEM.x0-16); y=MEM.y0+8+rand()*(MEM.y1-MEM.y0-8); }while(where==="out"&&false); ions.push({kind,where,p:[x,y,z]}); } }
+const KEY={na:"sodium",k:"potassium"};
 spawn("na","out",20); spawn("na","in",5); spawn("k","in",20); spawn("k","out",5);
 const count=(kind,where)=>ions.filter((i)=>i.kind===kind&&(i.where===where||(i.where==="move"&&i.dest===where))).length;
 function moveIon(ion,pts,dur,dest){ ion.where="move"; ion.path=pts; ion.t=0; ion.dur=dur; ion.dest=dest; }
 function nearest(kind,where,to){ let best=null,bd=1e9; for(const i of ions) if(i.kind===kind&&i.where===where){ const d=Math.hypot(i.p[0]-to[0],i.p[1]-to[1],i.p[2]-to[2]); if(d<bd){bd=d;best=i;} } return best; }
-const siteP=(kind,j)=>[C[0]+SITES[kind][j][0], C[1]-HY+WALL+3, SITES[kind][j][1]];
+const siteP=(kind,j)=>[C[0]+SITES[KEY[kind]][j][0], C[1]-HY+WALL+3, SITES[KEY[kind]][j][1]];
 const below=[C[0],C[1]+2,GZ0-6], above=[C[0],C[1]+2,GZ1+6];
 let phase=0.95, cycles=0, blocked=false, drugT=0, leakNa=0, leakK=0, atpFlying=null, phos=false, waiting="";
 const held={na:[],k:[]};
@@ -147,7 +148,7 @@ function leak(kind,dt){ // a gradient-driven trickle through the leak channel
   if(kind==="na") leakNa+=rate*dt; else leakK+=rate*dt;
   const acc=kind==="na"?leakNa:leakK; if(acc<1) return;
   if(kind==="na") leakNa-=1; else leakK-=1;
-  const [x,y]=LEAK[kind]; const ion=nearest(kind,hi,[x,y,hi==="out"?MZ1+10:MZ0-10]); if(!ion) return;
+  const [x,y]=LEAK[KEY[kind]]; const ion=nearest(kind,hi,[x,y,hi==="out"?MZ1+10:MZ0-10]); if(!ion) return;
   const q=[MEM.x0+12+rand()*(MEM.x1-MEM.x0-24), MEM.y0+10+rand()*(MEM.y1-MEM.y0-14), lo==="out"?OUTZ[0]+4+rand()*20:INZ[0]+4+rand()*30];
   const a=[x,y,hi==="out"?MZ1+6:MZ0-6], b=[x,y,hi==="out"?MZ0-6:MZ1+6];
   moveIon(ion,[ion.p.slice(),a,b,q],2.2,lo);
@@ -184,7 +185,7 @@ function draw(){
   const groups={below:[],inside:[],above:[]};
   for(const i of ions){ const z=i.p[2]; const inBox=Math.abs(i.p[0]-C[0])<HX&&Math.abs(i.p[1]-C[1])<HY+2&&z>GZ0-2&&z<GZ1+2;
     const grp= inBox?"inside": z<MZ0-1?"below": z>MZ1+1?"above": null; if(!grp) continue; groups[grp].push(i); }
-  const paint=(list)=>{ list.sort((a,b)=>K.depthOf(a.p,P)-K.depthOf(b.p,P)); return stainDots("na",list.filter((i)=>i.kind==="na").map((i)=>at(i.p)),2.3)+stainDots("k",list.filter((i)=>i.kind==="k").map((i)=>at(i.p)),3.0); };
+  const paint=(list)=>{ list.sort((a,b)=>K.depthOf(a.p,P)-K.depthOf(b.p,P)); return stainDots("sodium",list.filter((i)=>i.kind==="na").map((i)=>at(i.p)),2.3)+stainDots("potassium",list.filter((i)=>i.kind==="k").map((i)=>at(i.p)),3.0); };
   belowG.innerHTML=paint(groups.below); insideG.innerHTML=paint(groups.inside); aboveG.innerHTML=paint(groups.above);
   // ATP flies in from the cytoplasm to the P-domain; the phosphate sits there until E2
   let a="";
@@ -208,7 +209,7 @@ vitaLoop({ stage, idleMs:9000,
 `;
 const body = k.plateHtml({
   fig: "Fig 07", title: "Na⁺/K⁺ pump", hint: "Click · ouabain",
-  readout: "E1 · 3 Na⁺ bind inside", keys: [{ mark: "lit", label: "The two gates, never both open" }, { mark: "na", label: "Na⁺" }, { mark: "k", label: "K⁺" }, { mark: "atp", label: "ATP and its phosphate" }],
+  readout: "E1 · 3 Na⁺ bind inside", keys: [{ mark: "lit", label: "The two gates, never both open" }, { mark: "sodium", label: "Na⁺" }, { mark: "potassium", label: "K⁺" }, { mark: "atp", label: "ATP and its phosphate" }],
   caption: "The outside of the cell is above the membrane, the cytoplasm below (ruler: 1 tick = 1 nm). Every cycle the pump takes 3 Na⁺ from inside, spends one ATP to lock them in, opens outward and lets them go, takes 2 K⁺ from outside, drops the phosphate, and opens inward again: one net charge leaves per cycle. Two leak channels let ions run back down their gradients at a rate set by the gradient; with the pump running the two balance. Click to add ouabain, the plant toxin that jams the pump in its outward-open state: the leaks win and the gradients fade. A real pump turns over about 100 times a second; shown 600× slower, with a dozen ions standing for millions.",
   body: `<div class="iso-stage" tabindex="0" role="button" aria-label="Sodium-potassium pump: Space toggles ouabain">${svg}</div>`,
 });

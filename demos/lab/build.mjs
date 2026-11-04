@@ -28,5 +28,5 @@ for (const x of [-154, -60, 30]) sc.put(k.depthOf([x, 0, 0], P) - 50, S(k.cylind
 sc.put(k.depthOf([150, 0, 0], P) - 50, S(k.cylinder(150, 0, 12, 0, 2.4, P, 32, 0.5), { tone: "mid" }) + S(k.cylinder(150, 0, 4.2, 2.4, 18, P, 18), { tone: "mid", crease: "none" }));
 const svg = k.figureSvg({ width: W, height: H, label: "Test bench for the soft-body and branching primitives.", body: [plinth(PLATE, P), sc.svg()] });
 const body = k.plateHtml({ fig: "Lab", title: "Bio primitives", hint: "blobOf · clusterOf · treeOf", readout: "v3", caption: "Left to right: blobOf (a dividing cell as one smooth body), clusterOf with press 0 (eight loose blastomeres, each shaded as its own sphere, membranes traced where they meet), clusterOf with press 0.16 (the same cells compacted: flat contacts, faint membranes), treeOf (four levels of Murray's-law branching, each fork on a ball tee).", body: `<div class="iso-stage">${svg}</div>` });
-writeFileSync(join(OUT, "lab-primitives.html"), vitaPage({ n: "Lab", title: "Bio primitives", zh: "v3 原语试验台", body, script: "" }));
+writeFileSync(join(OUT, "lab-primitives.html"), vitaPage({ n: "Lab", title: "Bio primitives", zh: "v3 原语试验台", en: "v3 primitives test bench", body, script: "" }));
 console.log("wrote lab-primitives.html");

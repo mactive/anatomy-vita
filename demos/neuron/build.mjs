@@ -1,10 +1,11 @@
-// 04 · Neuron — a fluorescent neuron on a coverslip in a recording rig: a stimulating pipette on the soma,
+// 04 · Neuron (v3: dendrites from bio/branch.mjs, live behaviour from vitaLoop) — a fluorescent neuron on a coverslip in a recording rig: a stimulating pipette on the soma,
 // a recording pipette on the axon terminal, and an amplifier whose screen draws the membrane potential.
 // What moves: the action potential. With myelin it jumps node to node; strip the myelin and it crawls.
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { k, G, liveScript, rng, plinth, stain, vitaPage, byDepth } from "../../bio/bio.mjs";
+import { k, G, liveScript, LOOP_SRC, rng, plinth, stain, vitaPage, byDepth } from "../../bio/bio.mjs";
+import { treeOf, treeItems } from "../../bio/branch.mjs";
 import { tubePieces, tubeSvg } from "../../kit/tube.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -28,19 +29,20 @@ const items = [];
 const put = (depth, html) => items.push([depth, html]);
 const tubeInto = (pts, r, tone, wrap = (h) => h, maxLength = 9) => { for (const piece of tubePieces(pts, r, P, { maxLength })) put(G.dot3(piece.mid, V), wrap(tubeSvg(piece, { tone }))); };
 const gfp = (h) => stain("gfp", h, 0.7);
-// dendrites: a seeded branching tree, tapering, lying on the glass
-function branch(from, dir, len, r, depth) {
-  const pts = [from]; let p = from, d = dir;
-  const n = Math.max(3, Math.round(len / 4));
-  for (let i = 0; i < n; i++) { const a = Math.atan2(d[1], d[0]) + (rand() - 0.5) * 0.35; d = [Math.cos(a), Math.sin(a), 0]; p = [p[0] + d[0] * len / n, p[1] + d[1] * len / n, Math.max(SZ + r * 0.8, p[2] - 1.2)]; pts.push(p); }
-  const route = G.resample(G.fillet(pts, 4, 5), 1.4);
-  tubeInto(route, (t) => r * (1 - 0.45 * t), "hi", gfp, 7);
-  const tip = pts[pts.length - 1];
-  if (depth > 0) { const a = Math.atan2(d[1], d[0]); for (const s of [-1, 1]) branch(tip, [Math.cos(a + s * (0.38 + rand() * 0.3)), Math.sin(a + s * (0.38 + rand() * 0.3)), 0], len * (0.62 + rand() * 0.15), r * 0.58, depth - 1); }
-  else put(G.dot3(tip, V) + 0.1, gfp(D([at(tip)], { size: 0.9, tone: "hi" }))); // a spine head at each tip
-}
+// dendrites: Murray's-law trees from bio/branch.mjs, pressed flat onto the glass (a cultured neuron spreads in 2D);
+// every fork sits on a ball tee and every tip ends in a spine head
+const flat = (p, z0) => [p[0], p[1], SZ + 2 + Math.max(0, p[2] - z0) * 0.12];
 const DEND = [Math.PI * 0.72, Math.PI * 0.95, Math.PI * 1.2, Math.PI * 1.45, Math.PI * 0.5];
-DEND.forEach((a, i) => { const dir = [Math.cos(a), Math.sin(a), 0]; branch(G.add3(SOMA, G.mul3(dir, SOMA_R * 0.8)).map((v, j) => (j === 2 ? SZ + 6 : v)), dir, 30 + rand() * 10, 2.6, i === 4 ? 1 : 2); });
+DEND.forEach((a, i) => {
+  const dir = [Math.cos(a), Math.sin(a), 0];
+  const root = G.add3(SOMA, G.mul3(dir, SOMA_R * 0.8)).map((v, j) => (j === 2 ? SZ + 6 : v));
+  const tree = treeOf(1906 + i * 7, root, dir, { length: 18 + rand() * 6, radius: 2.5, levels: i === 4 ? 2 : 3, spread: 0.55, shrink: 0.78, wobble: 0.22, steps: 6 });
+  const z0 = root[2];
+  tree.segments.forEach((sg) => { sg.points = sg.points.map((q) => flat(q, z0)); });
+  tree.joints.forEach((j) => { j.p = flat(j.p, z0); });
+  tree.tips.forEach((t) => { t.p = flat(t.p, z0); });
+  for (const [d, h] of treeItems(tree, P, { wrap: gfp, tipBall: 1.5 })) put(d, h);
+});
 put(G.dot3(SOMA, V), gfp(S(G.sphereOf(SOMA, SOMA_R, P), { tone: "hi" })) + gfp(D([at(G.add3(SOMA, [1.5, 2, 4]))], { size: 2.8, tone: "lo" })));
 // axon: hillock, then a long gentle S along the glass, ending in three terminal boutons
 const AX_R = 1.5, MY_R = 4.2;
@@ -127,10 +129,9 @@ const NODES=${JSON.stringify(nodes.map((v) => +v.toFixed(2)))}; const AXLEN=${AX
 const stage=document.querySelector(".iso-stage"), svg=stage.querySelector("svg"), readout=document.querySelector("[data-readout]");
 const band=svg.querySelector('[data-part="band"]'), my=svg.querySelector('[data-part="myelin"]'), trace=svg.querySelector('[data-part="trace"]'), spark=svg.querySelector('[data-part="spark"]');
 const nodeEls=[...svg.querySelectorAll("[data-node]")];
-const still=matchMedia("(prefers-reduced-motion: reduce)");
 // truth: drawn axon stands for 10 mm of a peripheral nerve. Myelinated Aβ fibre ~40 m/s; unmyelinated C fibre ~2 m/s.
 const AXON_MM=10, V_MY=40, V_UN=2.0, SLOW=2000; // shown 2000× slower than life
-let myelinated=true, fired=[], vmHist=[], clock=0, last=0, frame=0, visible=false, nextAuto=0.8, shots=0, touring=!still.matches;
+let myelinated=true, fired=[], vmHist=[], clock=0, nextAuto=0.8, shots=0;
 const apShape=(ms)=>{ // membrane potential (mV) at a point, ms after the impulse arrives
   if(ms<-0.6) return -70; if(ms<0) return -70+8*Math.exp(ms*5);
   if(ms<0.5) return -62+102*Math.sin(ms/0.5*Math.PI/2); if(ms<1.4) return 40-120*((ms-0.5)/0.9); if(ms<5) return -80+10*(1-Math.exp(-(ms-1.4)/1.2)); return -70; };
@@ -157,19 +158,17 @@ function frameDraw(){
   trace.setAttribute("d","M"+vmHist.map((v,i)=>{ const x=SCR.x0+1+(SCR.x1-SCR.x0-2)*i/149; const p=K.iso([x,SCRY+0.1,vz(v)],P); return p[0].toFixed(1)+" "+p[1].toFixed(1); }).join("L"));
   fired=fired.filter((f)=>msNow(f)<arrivalMs(AXLEN,f.mode)+8);
   const text=(myelinated?"myelinated · "+V_MY+" m/s":"unmyelinated · "+V_UN.toFixed(1)+" m/s")+" · Vm "+Math.round(vm)+" mV";
-  if(readout.textContent!==text) readout.textContent=text; stage.setAttribute("aria-valuetext",text);
+  vitaSay(stage,readout,text);
 }
-function tick(now){ const dt=last?Math.min((now-last)/1000,1/30):1/60; last=now; clock+=dt;
-  if(touring){ nextAuto-=dt; if(nextAuto<=0&&!fired.length){ if(shots>0&&shots%3===0){ setMyelin(!myelinated); nextAuto=1.2; shots++; } else { fire(); nextAuto=myelinated?1.4:1.5; } } }
-  frameDraw(); frame=visible&&!still.matches?requestAnimationFrame(tick):0; }
 function setMyelin(v){ myelinated=v; my.style.opacity=v?"1":"0.08"; }
-const run=()=>{ if(!frame&&visible){ last=0; frame=requestAnimationFrame(tick);} };
-let idle=0; const takeOver=()=>{ touring=false; clearTimeout(idle); idle=setTimeout(()=>{ touring=!still.matches; nextAuto=1; },6000); };
-new IntersectionObserver((e)=>{visible=e[e.length-1].isIntersecting; if(visible) run();},{rootMargin:"120px 0px"}).observe(stage);
-stage.addEventListener("click",()=>{ takeOver(); fire(); run(); });
-stage.addEventListener("keydown",(e)=>{ if(e.key===" "||e.key==="Enter"){ takeOver(); fire(); } else if(e.key==="m"||e.key==="M"){ takeOver(); setMyelin(!myelinated); } else return; e.preventDefault(); run(); });
-if(still.matches){ touring=false; }
-frameDraw();
+vitaLoop({ stage, idleMs:6000,
+  frame(dt,st){ clock+=dt;
+    if(st.touring&&dt>0){ nextAuto-=dt; if(nextAuto<=0&&!fired.length){ if(shots>0&&shots%3===0){ setMyelin(!myelinated); nextAuto=1.2; shots++; } else { fire(); nextAuto=myelinated?1.4:1.5; } } }
+    frameDraw(); },
+  click(){ fire(); },
+  keys(key){ if(key===" "||key==="Enter"){ fire(); return true; } if(key==="m"||key==="M"){ setMyelin(!myelinated); return true; } return false; },
+  resume(){ nextAuto=1; },
+});
 `;
 const body = k.plateHtml({
   fig: "Fig 04", title: "Action potential", hint: "Click or Space fire · M myelin",
@@ -177,7 +176,7 @@ const body = k.plateHtml({
   caption: "Not to scale: the axon stands for 10 mm of nerve, compressed; all speeds are true and shown 2,000× slower. At rest the membrane sits at −70 mV. A stimulus at the soma crosses threshold (about −55 mV) at the axon hillock; sodium channels open and the membrane swings to about +40 mV in half a millisecond, then potassium brings it back past −80 mV. Myelin insulates the internodes, so the impulse is regenerated only at the nodes of Ranvier and jumps between them at about 40 m/s; without myelin (a thin C fibre) it must regenerate everywhere and crawls at about 2 m/s.",
   body: `<div class="iso-stage" tabindex="0" role="button" aria-label="Neuron: Space fires an action potential, M toggles the myelin">${svg}</div>`,
 });
-const page = vitaPage({ n: "04", title: "Action potential", zh: "神经元 · 动作电位", body, script: liveScript() + live,
-  facts: [["−70 mV", "静息膜电位"], ["+40 mV", "峰值"], ["~1 ms", "一次动作电位"], ["40 m/s", "有髓纤维传导"], ["0.5–2 m/s", "无髓纤维传导"], ["~860 亿", "人脑神经元数"]] });
+const page = vitaPage({ n: "04", title: "Action potential", zh: "神经元 · 动作电位", en: "Neuron · action potential", body, script: liveScript() + LOOP_SRC + live,
+  facts: [["−70 mV", "静息膜电位", "resting potential"], ["+40 mV", "峰值", "peak"], ["~1 ms", "一次动作电位", "one action potential"], ["40 m/s", "有髓纤维传导", "myelinated conduction"], ["0.5–2 m/s", "无髓纤维传导", "unmyelinated conduction"], ["~86 billion", "人脑神经元数（~860 亿）", "neurons in a human brain"]] });
 writeFileSync(join(OUT, "04-neuron.html"), page);
 console.log("wrote 04-neuron.html", (page.length / 1024).toFixed(0) + " KB");

@@ -17,7 +17,7 @@ small model of the real biology, and the figure says how it has changed space an
 motion and verification all apply unchanged. This file only adds what life needs. When the two disagree, Anatomy's
 craft wins on drawing; this file wins on biology.
 
-Nine finished figures ship in `demos/`; open the closest one before you start. Each builds with
+Finished figures ship in `demos/` (01–15 so far); open the closest one before you start. Each builds with
 `node demos/<name>/build.mjs` into `site/demos/`.
 
 | Figure | Scale | Object | Shows how to |
@@ -31,6 +31,12 @@ Nine finished figures ship in `demos/`; open the closest one before you start. E
 | `pump/` 07 Na⁺/K⁺ pump | 10 nm | two-gate airlock + leak channels | conserved ions, a drug switch, gradients that run down |
 | `mito/` 08 mitochondrion | 1 µm | lengthwise cut teaching model | a curved cutaway (clipPath), lamellae with `G.prismOf` |
 | `cleavage/` 09 cleavage → blastocyst | 100 µm | embryo in a holding pipette | `bio/soft.mjs`: packed cells, compaction, a cavity |
+| `differentiation/` 10 differentiation | — | sliced-plywood Waddington board (declared metaphor) | a metaphor figure; a ruler that measures time; ribs for concave profiles |
+| `synapse/` 11 synapse | 1 µm | cut-open synapse + two-pipette rig | a vertical cutaway, a tiny key region exaggerated and declared, Ca²⁺-dependent failures |
+| `sarcomere/` 12 sarcomere | 2.5 µm | slide-rule sarcomere on sprung carriages | a `<use>` pose library for 128 moving heads; one distorted axis |
+| `knee/` 13 knee | 10 cm | teaching skeleton + goniometer | a jointed organ driven by a linkage; cords that go taut/slack; glass compartments |
+| `heart/` 14 heart | 12 cm | four-chamber cut model + pressure trace | a Hero organ; valves; a Wiggers-style trace from one model |
+| `alveolus/` 15 alveolus | 200 µm | cut-open alveolus on posts + oximeter | a cut sphere, blood that blends oxy↔deoxy (`stainMix`), a disease switch (fibrosis) |
 
 `demos/lab/` is a test bench for the soft-body and branching primitives.
 
@@ -41,7 +47,7 @@ Nine finished figures ship in `demos/`; open the closest one before you start. E
 | Scale | What the thing is | How to draw it | Examples |
 |---|---|---|---|
 | < 50 nm | a molecular machine | as the machine it already is, at true size, in a membrane patch or on a track | pump → airlock, ATP synthase → water wheel, ribosome → tape reader, kinesin → walker, polymerase → zipper |
-| 50 nm – 1 mm | an organelle, a cell, a small tissue | a specimen: on a coverslip, in a pipette, as a cut-open teaching model on cradles | mitochondrion → lengthwise cut model, embryo → holding pipette, neuron → GFP cell + recording rig |
+| 50 nm – 1 mm | an organelle, a cell, a small tissue, organ micro-anatomy (alveolus, nephron, villus) | a specimen on a coverslip or in a pipette, or a cut-open teaching model on cradles or posts | mitochondrion → lengthwise cut model, embryo → holding pipette, neuron → GFP cell + recording rig |
 | 1 mm – 2 m | an organ, a joint, a system | an anatomical teaching model: on a stand, opening on a hinge or sliding apart, with ports and tubing | knee → skeleton model 0–135°, heart → four-chamber cut model, nephron → plumbing on a board |
 | > 2 m | an ecosystem, a planet | a laboratory model of it: a sealed terrarium, a stream table, a globe on a stand | carbon cycle → three sealed tanks with flow meters, Daisyworld → a globe with a thermostat |
 | no body at all | a process with no physical form (differentiation, evolution, feedback) | invent a machine, and say in the caption that it is a metaphor | Waddington landscape → marble on a deformable tray |
@@ -72,9 +78,9 @@ Follow Anatomy's ten steps (`references/anatomy/ANATOMY-SKILL.md`, "Workflow"). 
 5. **Plan the world in true units.** Pick a world scale per unit (`const UM = 1.6`, `const NM = 8`) and build every size from real numbers through it. Camera as Anatomy; choose the azimuth so the subject's long side and its open cut face toward the viewer.
 6. **Build static geometry once; rebuild only what changes shape.** Soft bodies and packed cells are rebuilt per frame through `SOFT` in the page (cheap at `step: 1.5`); guard redraws with a change threshold.
 7. **Paint in order.** Use `scene(P)` for anything that can overlap; split shells into back and front (`shellOf`); draw what sits inside a cut after the cavity fill and clip it to the cut (`clipPath`, see `demos/mito`).
-8. **Frame it** with `vitaPage({ n, title, zh, body, script, facts })`: card, true caption (ruler, organism, time scaling), and a facts row of at least three real numbers.
+8. **Frame it** with `vitaPage({ n, title, zh, en, body, script, facts })`: card, true caption (ruler, organism, time scaling), and a facts row of at least three real numbers, each `[value, 中文, English]`. The page shell is bilingual (中文/EN switch); card text stays English.
 9. **Make it live with `vitaLoop`** (`LOOP_SRC` in the page script): idle tour, pointer and keys, offscreen pause and reduced-motion still frame come for free. Keep the readout short enough not to collide with the hint (about 45 characters).
-10. **Verify.** Screenshot at 820 and 390 px and several moments of the tour; 4× close-ups of the subject; then `node bio/check.mjs site/demos/<page>.html` must end `vita check passed`. Rigid pipework still goes through Anatomy's `audit.mjs`.
+10. **Verify.** Screenshot at 820 and 390 px and several moments of the tour (`bio/tools/shot.mjs`, `scrub.mjs`, `moments.mjs`); 4× close-ups of the subject (`bio/tools/zoom.mjs`); then `node bio/check.mjs site/demos/<page>.html` must end `vita check passed` (columns: errors live keys still phone scale stains time facts ink size fit). Rigid pipework still goes through Anatomy's `audit.mjs`.
 
 ## The bio layer
 

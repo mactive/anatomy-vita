@@ -4,7 +4,7 @@
 import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { k, G, liveScript, RNG_SRC, plinth, stain, vitaPage, byDepth } from "../../bio/bio.mjs";
+import { k, G, liveScript, LOOP_SRC, RNG_SRC, plinth, stain, vitaPage, byDepth } from "../../bio/bio.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "../../site/demos");
@@ -107,12 +107,11 @@ ${RNG_SRC}
 const rand = rng(1961);
 const stage=document.querySelector(".iso-stage"), svg=stage.querySelector("svg"), readout=document.querySelector("[data-readout]");
 const rotorG=svg.querySelector('[data-part="rotor"]'), gammaG=svg.querySelector('[data-part="gamma"]'), belowG=svg.querySelector('[data-part="below"]'), aboveG=svg.querySelector('[data-part="above"]');
-const still=matchMedia("(prefers-reduced-motion: reduce)");
 const V=G.viewOf(P), at=(p)=>K.iso(p,P);
 // truth: c8 ring → 8 H+ per turn, 3 ATP per turn. ΔG(ATP) ≈ 52 kJ/mol ≈ 0.54 eV; with ~3.7 H+ per ATP (incl. phosphate import) the motor stalls near 145 mV
 const STALL=145, VMAX=45, SLOW=1/120;
 const rpsOf=(dp)=>VMAX*Math.tanh((dp-STALL)/45);
-let dp=190, dpTarget=190, phi=0, clock=0, touring=!still.matches, visible=false, frame=0, last=0, idle=0;
+let dp=190, dpTarget=190, phi=0, clock=0;
 const carry=Array.from({length:NC},(_,j)=>j%2===0);
 const prevAng=Array.from({length:NC},()=>null);
 const free=[]; // released protons and ATPs: {p, v, life, kind}
@@ -163,19 +162,16 @@ function step(dt){
   if(third!==prev){ const b=BETA[((third%3)+3)%3]; if(dphi>0){ made++; free.push({kind:"atp",p:[b.c[0]+(b.c[0]-C[0])*0.5,b.c[1]+(b.c[1]-C[1])*0.5,F1Z+4],v:[(b.c[0]-C[0])*0.35,(b.c[1]-C[1])*0.35,7],life:3}); } else { made--; } }
 }
 function say(){ const rps=rpsOf(dp); const mode=rps>=0?"ATP made":"ATP burned, H⁺ pumped"; const text="Δp "+Math.round(dp)+" mV · "+Math.abs(rps).toFixed(0)+" rev/s · "+Math.abs(rps*3).toFixed(0)+" "+mode+"/s";
-  if(readout.textContent!==text) readout.textContent=text; stage.setAttribute("aria-valuenow",String(Math.round(dp))); stage.setAttribute("aria-valuetext",text); }
-function tick(now){ const dt=last?Math.min((now-last)/1000,1/30):1/60; last=now;
-  if(touring){ clock+=dt; dpTarget=172+58*Math.sin(clock*TAU/36); }
-  dp+= (dpTarget-dp)*(1-Math.exp(-dt/0.4));
-  if(!still.matches) step(dt);
-  drawRotor(); drawBelow(still.matches?0:dt); drawAbove(dt); say();
-  frame=visible&&!still.matches?requestAnimationFrame(tick):0; }
-const run=()=>{ if(!frame&&visible){ last=0; frame=requestAnimationFrame(tick);} };
-const steer=(v)=>{ touring=false; dpTarget=Math.max(80,Math.min(240,v)); clearTimeout(idle); idle=setTimeout(()=>{touring=!still.matches; clock=Math.asin(Math.max(-1,Math.min(1,(dp-172)/58)))*36/TAU; run();},4500); if(still.matches){dp=dpTarget; drawRotor(); drawBelow(0); drawAbove(0); say();} run(); };
-new IntersectionObserver((e)=>{visible=e[e.length-1].isIntersecting; if(visible) run();},{rootMargin:"120px 0px"}).observe(stage);
-stage.addEventListener("pointermove",(e)=>{ const b=svg.getBoundingClientRect(); const s=((e.clientX-b.left)/b.width-0.15)/0.7; steer(80+Math.min(1,Math.max(0,s))*160); });
-stage.addEventListener("keydown",(e)=>{ if(e.key==="ArrowRight"||e.key==="ArrowUp") steer(dpTarget+10); else if(e.key==="ArrowLeft"||e.key==="ArrowDown") steer(dpTarget-10); else return; e.preventDefault(); });
-drawRotor(); drawBelow(0); drawAbove(0); say();
+  vitaSay(stage,readout,text); stage.setAttribute("aria-valuenow",String(Math.round(dp))); }
+vitaLoop({ stage, idleMs:4500,
+  frame(dt,st){ if(st.touring){ clock+=dt; dpTarget=172+58*Math.sin(clock*TAU/36); }
+    dp=st.still? dpTarget : dp+(dpTarget-dp)*(1-Math.exp(-dt/0.4));
+    if(!st.still) step(dt);
+    drawRotor(); drawBelow(st.still?0:dt); drawAbove(dt); say(); },
+  pointer(x){ dpTarget=80+x*160; },
+  keys(key){ if(key==="ArrowRight"||key==="ArrowUp"){ dpTarget=Math.min(240,dpTarget+10); return true; } if(key==="ArrowLeft"||key==="ArrowDown"){ dpTarget=Math.max(80,dpTarget-10); return true; } return false; },
+  resume(){ clock=Math.asin(Math.max(-1,Math.min(1,(dp-172)/58)))*36/TAU; },
+});
 `;
 const body = k.plateHtml({
   fig: "Fig 02", title: "ATP synthase", hint: "Hover ↔ proton-motive force",
@@ -183,7 +179,7 @@ const body = k.plateHtml({
   caption: "Bovine ATP synthase at true scale (ruler: 1 tick = 1 nm). Eight c-subunits form the rotor ring, so one turn carries 8 protons from the intermembrane space below to the matrix above, and the three catalytic β lobes each release one ATP per turn: 8/3 ≈ 2.7 H⁺ per ATP. Above about 145 mV it makes ~100 ATP a second; lower the force and the same motor runs backwards, burning ATP to pump protons. Motion shown 120× slower.",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="ATP synthase: arrow keys change the proton-motive force" aria-valuemin="80" aria-valuemax="240" aria-valuenow="190">${svg}</div>`,
 });
-const page = vitaPage({ n: "02", title: "ATP synthase", zh: "ATP 合酶 · 分子马达", en: "ATP synthase · molecular motor", body, script: liveScript() + live,
+const page = vitaPage({ n: "02", title: "ATP synthase", zh: "ATP 合酶 · 分子马达", en: "ATP synthase · molecular motor", body, script: liveScript() + LOOP_SRC + live,
   facts: [["8 H⁺", "每转（牛 c8 环）", "per turn (bovine c8 ring)"], ["3 ATP", "每转", "per turn"], ["~100 /s", "每个酶的 ATP 产率", "ATP per enzyme"], ["~145 mV", "停转/反转阈值", "stall / reversal threshold"], ["~65 kg", "人每天周转的 ATP", "ATP a human turns over daily"]] });
 writeFileSync(join(OUT, "02-atp-synthase.html"), page);
 console.log("wrote 02-atp-synthase.html", (page.length / 1024).toFixed(0) + " KB");
