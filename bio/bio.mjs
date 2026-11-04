@@ -10,16 +10,19 @@ import { tubePieces, tubeSvg } from "../kit/tube.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-// 1. Live runtime: iso-kit, lathe and tube as namespaces K, G, T inside one page script.
+// 1. Live runtime: iso-kit, lathe and tube as namespaces K, G, T inside one page script; bio modules on request
+//    (liveScript({ soft: true, branch: true }) adds SOFT and BR, built from the same files the build uses).
 function moduleAsNamespace(file, name, imports) {
-  let src = readFileSync(join(ROOT, "kit", file), "utf8");
+  let src = readFileSync(join(ROOT, file), "utf8");
   const names = [];
   src = src.replace(/^import[^\n]*\n/gm, "");
   src = src.replace(/^export (async function|function|const|let|class) ([A-Za-z0-9_$]+)/gm, (_, kind, id) => { names.push(id); return `${kind} ${id}`; });
   return `const ${name} = (() => {\n${imports}\n${src}\nreturn { ${names.join(", ")} };\n})();\n`;
 }
-export function liveScript() {
-  return moduleAsNamespace("iso-kit.mjs", "K", "") + moduleAsNamespace("lathe.mjs", "G", "const { cameraOf, iso, pathOf } = K;") + moduleAsNamespace("tube.mjs", "T", "const { iso, pathOf } = K;");
+export function liveScript({ soft = false, branch = false } = {}) {
+  return moduleAsNamespace("kit/iso-kit.mjs", "K", "") + moduleAsNamespace("kit/lathe.mjs", "G", "const { cameraOf, iso, pathOf } = K;") + moduleAsNamespace("kit/tube.mjs", "T", "const { iso, pathOf } = K;")
+    + (soft ? moduleAsNamespace("bio/soft.mjs", "SOFT", "") : "")
+    + (branch ? moduleAsNamespace("bio/branch.mjs", "BR", "const { tubePieces, tubeSvg } = T;") : "");
 }
 
 // 2. Seeded variation: no two cells are the same, but every build is.
@@ -109,6 +112,10 @@ ${Object.keys(STAINS).map((n) => `.iso-swatch[data-mark="${n}"] path{stroke:var(
 .bio-lumen{fill:color-mix(in oklab,var(--anatomy-paper),var(--anatomy-shade-0) 75%)}
 .bio-cavity{fill:color-mix(in oklab,color-mix(in oklab,var(--anatomy-paper),var(--anatomy-shade-1) 55%),var(--stain-myelin) 12%)}
 .bio-rim{fill:color-mix(in oklab,var(--anatomy-top),var(--stain-myelin) 10%)}
+.bio-seam{stroke-width:calc(var(--anatomy-weight) * .8)}
+.bio-zona-back{opacity:.5}
+.bio-pipette .tb-body,.bio-pipette .tb-shade{opacity:.75}
+.bio-blastocoel{fill:color-mix(in oklab,var(--anatomy-paper),var(--stain-dapi) 10%)}
 .bio-membrane{stroke-width:calc(var(--anatomy-weight) * 1.7)}
 .vita-nav{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin:0 0 18px;font:12px/1.4 var(--anatomy-mono,ui-monospace),monospace;letter-spacing:.06em;color:var(--anatomy-muted);text-transform:uppercase}
 .vita-nav a{color:var(--anatomy-text);text-decoration:none}
@@ -120,29 +127,12 @@ body.vita-embed .iso-page{margin:10px auto}
 `;
 
 // 7. A figure page: nav, card, true facts; ?embed hides the chrome for the essay page.
-//   facts: [value, 中文说明, English label]; zh / en: the page subtitle in each language.
-export function vitaPage({ n, title, zh, en = title, body, script, facts = [], theme = "light", width = 760 }) {
-  const nav = `<nav class="vita-nav"><a href="../index.html">← Anatomy Vita</a><span>${n} · ${t(zh, en)}${LANG_BUTTON}</span></nav>`;
-  const factHtml = facts.length ? `<div class="vita-facts">${facts.map(([v, lz, le = lz]) => `<span><b>${v}</b>${t(lz, le)}</span>`).join("")}</div>` : "";
-  const embed = `if(new URLSearchParams(location.search).has("embed")||/(^#|&)embed(&|$)/.test(location.hash))document.body.classList.add("vita-embed");`;
-  return k.pageHtml({ title: `${title} · Anatomy Vita`, theme, width, body: `<script>${LANG_SRC}</script><style>${BIO_CSS}${LANG_CSS}</style>${nav}${body}${factHtml}`, script: embed + "\n" + script });
+export function vitaPage({ n, title, zh, body, script, facts = [], theme = "light", width = 760 }) {
+  const nav = `<nav class="vita-nav"><a href="../index.html">← Anatomy Vita</a><span>${n} · ${zh}</span></nav>`;
+  const factHtml = facts.length ? `<div class="vita-facts">${facts.map(([v, l]) => `<span><b>${v}</b>${l}</span>`).join("")}</div>` : "";
+  const embed = `if(new URLSearchParams(location.search).has("embed")||location.hash==="#embed")document.body.classList.add("vita-embed");`;
+  return k.pageHtml({ title: `${title} · Anatomy Vita`, theme, width, body: `<style>${BIO_CSS}</style>${nav}${body}${factHtml}`, script: embed + "\n" + script });
 }
-
-// 7b. (v3) Bilingual: every shell string carries both languages; one attribute on <html> picks which shows.
-//   Order: ?lang= / #lang= → saved choice → browser language. Same-origin frames follow the toggle live.
-export const t = (zh, en, tag = "span") => `<${tag} class="l-zh" lang="zh-CN">${zh}</${tag}><${tag} class="l-en" lang="en">${en}</${tag}>`;
-export const LANG_CSS = `html[data-lang=en] .l-zh,html:not([data-lang=en]) .l-en{display:none!important}
-.vita-lang{margin-left:12px;font:inherit;letter-spacing:inherit;text-transform:none;color:inherit;background:none;border:1px solid currentColor;border-radius:3px;padding:1px 6px;cursor:pointer;opacity:.75}
-.vita-lang:hover{opacity:1}`;
-export const LANG_BUTTON = `<button type="button" class="vita-lang" onclick="vitaLang(document.documentElement.dataset.lang==='en'?'zh':'en',true)" aria-label="Switch language / 切换语言">${t("EN", "中文")}</button>`;
-export const LANG_SRC = `(function(){
-  var KEY="vita-lang";
-  function store(v){try{if(v)localStorage.setItem(KEY,v);return localStorage.getItem(KEY)}catch(e){return null}}
-  window.vitaLang=function(l,save){l=l==="en"?"en":"zh";var h=document.documentElement;h.dataset.lang=l;h.lang=l==="en"?"en":"zh-CN";if(save)store(l);};
-  var m=(location.search+"&"+location.hash).match(/[?&#]lang=(en|zh)/);
-  vitaLang(m?m[1]:store()||(/^zh/i.test(navigator.language||"")?"zh":"en"),!!m);
-  addEventListener("storage",function(e){if(e.key===KEY&&e.newValue)vitaLang(e.newValue);});
-})();`;
 
 // 8. (v2) A depth collector. Everything that can overlap goes in with its depth; svg() paints back to front.
 export function scene(P) {

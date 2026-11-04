@@ -137,10 +137,10 @@ build(f); drawn = f;
 const body = k.plateHtml({
   fig: "Fig 01", title: "Replication fork", hint: "Hover ↔ to run the fork · Space pause",
   readout: "fork at bp 30.0", keys: [{ mark: "blue", label: "New strands, copied from the old" }, { mark: "raised", label: "Parent strands, base pairs and three end flanges" }],
-  caption: "B-DNA at true scale on the ruler (1 major tick = 1 nm): 2 nm wide, 0.34 nm per base pair, 10.5 base pairs per turn. Each purine (A, G) reaches further across than a pyrimidine (T, C), so every pair is the same width; A–T holds by two hydrogen bonds, G–C by three. The leading strand is copied right up to the fork, the lagging strand backwards in fragments (here 9 bp; really 100–200 nt in human cells) that leave nicks between them.",
+  caption: "B-DNA at true scale on the ruler (1 major tick = 1 nm): 2 nm wide, 0.34 nm per base pair, 10.5 base pairs per turn. Each purine (A, G) reaches further across than a pyrimidine (T, C), so every pair is the same width; A–T holds by two hydrogen bonds, G–C by three. The leading strand is copied right up to the fork, the lagging strand backwards in fragments (here 9 bp; really 100–200 nt in human cells) that leave nicks between them. The tour moves the fork about 1 bp a second, roughly 1,000× slower than in E. coli.",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="Replication fork: arrow keys move the fork one base pair" aria-valuemin="20" aria-valuemax="43" aria-valuenow="30">${svg}</div>`,
 });
-const page = vitaPage({ n: "01", title: "DNA replication fork", zh: "DNA 复制叉 · 分子尺度", en: "DNA replication fork · molecular scale", body, script: liveScript() + live,
-  facts: [["2 nm", "双螺旋直径", "helix diameter"], ["0.34 nm", "每碱基对上升", "rise per base pair"], ["10.5 bp", "每一圈", "base pairs per turn"], ["~1,000 bp/s", "大肠杆菌复制叉速度", "E. coli fork speed"], ["~50 bp/s", "人类复制叉速度", "human fork speed"]] });
+const page = vitaPage({ n: "01", title: "DNA replication fork", zh: "DNA 复制叉 · 分子尺度", body, script: liveScript() + live,
+  facts: [["2 nm", "双螺旋直径"], ["0.34 nm", "每碱基对上升"], ["10.5 bp", "每一圈"], ["~1,000 bp/s", "大肠杆菌复制叉速度"], ["~50 bp/s", "人类复制叉速度"]] });
 writeFileSync(join(OUT, "01-dna.html"), page);
 console.log("wrote 01-dna.html", (page.length / 1024).toFixed(0) + " KB");

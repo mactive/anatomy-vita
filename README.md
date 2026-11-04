@@ -1,46 +1,18 @@
 # Anatomy Vita
 
-A Claude Code skill that draws living processes as live isometric specimens — DNA, ATP synthase, mitosis, neurons, ribosomes, kinesin, the Na⁺/K⁺ pump, mitochondria — from molecule to planet. Built on the [Anatomy](https://github.com/wheresryan22/anatomy) skill (MIT).
+An Agent Skill (Claude Code, and any harness that reads `SKILL.md`) that builds crafted, interactive isometric figures
+explaining **living things**, from molecules to planets. It extends [Anatomy](https://github.com/wheresryan22/anatomy)
+(Ryan · @wheresryan22, MIT) and keeps its kit unchanged.
 
-一个 Claude Code skill：把生命过程画成可交互的等轴测标本，从分子到星球。基于 Anatomy skill（MIT）扩展。
+- `SKILL.md` — the skill: laws of life, scale → object table, workflow
+- `references/bio-craft.md`, `references/bio-api.md` — craft and API; `references/anatomy/` — the original Anatomy docs (vendored, MIT)
+- `bio/` — the bio layer: `bio.mjs` (stains, shells, benches, live runtime, page), `soft.mjs` (soft bodies, packed cells),
+  `branch.mjs` (Murray branching), `check.mjs` (life-law checker)
+- `demos/*/build.mjs` — nine example figures (`node demos/<name>/build.mjs`); `demos/lab` tests the primitives
+- `kit/`, `scripts/` — Anatomy's kit and scripts, unchanged (see `LICENSE-anatomy`)
+- `evals/evals.json` — test prompts
+- `site/` — the showcase site: `node build-index.mjs`, then deploy the folder (`wrangler deploy` with `assets.directory = "./site"`, Netlify, GitHub Pages)
+- `agent.md` — iteration log for agents working on this repo
 
-**Live site / 在线站点:** https://anatomy-vita.mactive.workers.dev/
-
-## Install / 安装
-
-```bash
-npx skills add mactive/anatomy-vita
-```
-
-or / 或者
-
-```bash
-git clone https://github.com/mactive/anatomy-vita ~/.claude/skills/anatomy-vita
-```
-
-Then / 然后:
-
-```
-/anatomy-vita explain how a sarcomere contracts, interactive
-```
-
-## Layout / 目录
-
-- `SKILL.md` — the skill instructions
-- `bio/bio.mjs` — the bio layer (stains, membranes, plinths, live kit runtime, bilingual page shell)
-- `demos/*/build.mjs` — the eight figure sources: `node demos/dna/build.mjs` etc.
-- `build-index.mjs` — builds `site/index.html`
-- `site/` — the static website (bilingual 中文 / English; `?lang=en` or `?lang=zh`)
-- `kit/`, `scripts/`, `references/` — from Anatomy, unchanged (see `LICENSE-anatomy`)
-- `agent.md` — working notes and iteration log (Chinese)
-
-## Build & deploy / 构建与部署
-
-```bash
-for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
-wrangler deploy
-```
-
-## License
-
-MIT. Anatomy Vita builds on Anatomy by Ryan (@wheresryan22), MIT — see `LICENSE-anatomy`.
+Install as a skill: copy or symlink this folder into `~/.claude/skills/anatomy-vita/`.
+Check figures: `node bio/check.mjs site/demos/*.html` (needs Playwright).

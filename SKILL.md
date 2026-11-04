@@ -1,93 +1,103 @@
 ---
 name: anatomy-vita
-description: Draw living processes (DNA replication, molecular motors, ion pumps, cell division, neurons, organelles, tissues, organs, physiological systems, ecosystems) as crafted, interactive isometric SVG specimens with true numbers, real stains and conserved particles. Use this whenever someone wants a biology, biochemistry, cell-biology, physiology or life-science explainer, diagram, figure or interactive illustration — for docs, a lesson, a blog post or a landing page — even if they never say "isometric". Built on the Anatomy skill (MIT) and reuses its kit unchanged; adds a bio layer of stains, see-through membranes, specimen plinths, seeded variation, a live in-page kit for growth and topology change, a shared motion runtime and bilingual (Chinese/English) page shells.
+description: Build crafted, interactive isometric SVG figures that explain how living things work, from molecules to planets (DNA replication, ribosomes, motor proteins, ion pumps, mitochondria, cell division, embryos, neurons, synapses, muscle, joints, organs, organ systems, ecosystems), each as a real working object on a lab bench with true numbers, a live readout and calm motion. Use this whenever someone wants a biology, physiology, anatomy, cell-biology or life-science explainer figure, diagram or interactive illustration for a lesson, article, docs or a landing page, even if they never say "isometric". Extends the Anatomy skill (wheresryan22/anatomy, MIT) with stains, membranes, soft bodies, packed cells, branching trees, specimen stages and a life-law checker.
 license: MIT
-compatibility: Written for Claude Code. Needs Node.js 20.10+, and Chrome or Chromium for the screenshot and line checks.
-metadata:
-  opencode/slash: "true"
+compatibility: Node.js 20.10+ for builds; Playwright (or Chrome via CHROME=/path) for bio/check.mjs and screenshots. Kit vendored unchanged from Anatomy.
 ---
 
 # Anatomy Vita
 
-Anatomy Vita draws life the way [Anatomy](https://github.com/wheresryan22/anatomy) draws machines: a real, well-made object whose motion *is* the concept, built from many small solid parts, with every number coming from the same small model that moves them. Molecules really are machines and are drawn as such. Cells, tissues and organs are drawn as **specimens** — on slides, stands and teaching-model plinths, beside the instruments that would record them.
+Anatomy makes figures like a small instrument on a bench: the reader understands the idea because they recognise the
+machine. Vita keeps every rule of Anatomy and carries it into living things. Molecules are already machines, so they are
+drawn as machines. Cells and everything larger are drawn the way a lab really holds them: on a coverslip, in a holding
+pipette, as a cut-open teaching model on cradles, on a stand with a ruler. Every number on the figure comes from one
+small model of the real biology, and the figure says how it has changed space and time.
 
-Eight finished figures ship in `demos/`. Open the closest one before you start; each is built with `node demos/<name>/build.mjs`, which writes `site/demos/NN-name.html`.
+**Read `references/anatomy/ANATOMY-SKILL.md` first.** Its workflow, craft rules, tone hierarchy, painter's order,
+motion and verification all apply unchanged. This file only adds what life needs. When the two disagree, Anatomy's
+craft wins on drawing; this file wins on biology.
 
-| Demo | Scale | The object | Shows how to |
+Nine finished figures ship in `demos/`; open the closest one before you start. Each builds with
+`node demos/<name>/build.mjs` into `site/demos/`.
+
+| Figure | Scale | Object | Shows how to |
 |---|---|---|---|
-| `demos/dna/` | 2 nm | A double-helix zipper on three stands | stand rods, a helicase ring, strands rebuilt per frame |
-| `demos/atp/` | 10 nm | A water wheel in a membrane patch | a rotor driven by a counted proton pool, reversal below a threshold |
-| `demos/mitosis/` | 20 µm | One cell on a slide becoming two | topology change: the cell outline as a union of cross-sections |
-| `demos/neuron/` | 1 mm | A GFP neuron and a recording amplifier | stains, a live trace, myelinated vs unmyelinated conduction |
-| `demos/ribosome/` | 21 nm | A tape reader reading the real GFP gene | `scene()` depth collection, `vitaLoop()`, codon/anticodon teeth |
-| `demos/kinesin/` | 8 nm | A two-legged walker with a force-clamp spring | a force–velocity law driving the gait and the readout |
-| `demos/pump/` | 10 nm | A two-door airlock in a membrane | conserved, countable ions; leak channels; a blocking switch |
-| `demos/mito/` | 1 µm | A cut-open mitochondrion teaching model | clipped cutaways, cristae as prisms, demand-driven states |
+| `dna/` 01 replication fork | 2 nm | helix on three stands, unzipped by a ring | helices, strands that split, true bp geometry |
+| `atp/` 02 ATP synthase | 10 nm | rotary motor in a notched membrane | a membrane cut face, counted protons, a motor that reverses |
+| `mitosis/` 03 mitosis | 20 µm | one cell on a slide | topology change, membrane shells |
+| `neuron/` 04 action potential | 1 mm | GFP neuron + recording amplifier | branching, an instrument trace, myelin toggle |
+| `ribosome/` 05 translation | 21 nm | tape reader, real GFP gene | sequence-driven motion, key-and-lock teeth, rejection |
+| `kinesin/` 06 kinesin | 8 nm | walker on a microtubule + force clamp | a load you set, stall, hand-over-hand |
+| `pump/` 07 Na⁺/K⁺ pump | 10 nm | two-gate airlock + leak channels | conserved ions, a drug switch, gradients that run down |
+| `mito/` 08 mitochondrion | 1 µm | lengthwise cut teaching model | a curved cutaway (clipPath), lamellae with `G.prismOf` |
+| `cleavage/` 09 cleavage → blastocyst | 100 µm | embryo in a holding pipette | `bio/soft.mjs`: packed cells, compaction, a cavity |
 
-## Read Anatomy first
+`demos/lab/` is a test bench for the soft-body and branching primitives.
 
-Everything in Anatomy still applies: the ten-step workflow, the craft rules, the painter's order, the audit and line checks. The kit in `kit/` and the tools in `scripts/` are Anatomy's, copied unchanged — never edit them; put extensions in `bio/`.
+## The one idea, for living things
 
-- `references/craft.md` — the look: parts vocabulary, tones, painter's order, round parts, pipes. Read before designing.
-- `references/kit.md` — the kit API.
-- `references/motion.md` — live behaviour, springs, tours, input, reduced motion.
-- `references/verify.md` — `scripts/capture.mjs`, `scripts/drive.mjs`, the review checklist.
-- `references/walkthrough.md`, `webgl.md`, `3d.md`, `react.md`, `print.md`, `publish.md` — as in Anatomy.
+**The object is the explanation, and the specimen is the object.** Pick the form by scale:
 
-The upstream skill, with its own examples, lives at https://github.com/wheresryan22/anatomy.
+| Scale | What the thing is | How to draw it | Examples |
+|---|---|---|---|
+| < 50 nm | a molecular machine | as the machine it already is, at true size, in a membrane patch or on a track | pump → airlock, ATP synthase → water wheel, ribosome → tape reader, kinesin → walker, polymerase → zipper |
+| 50 nm – 1 mm | an organelle, a cell, a small tissue | a specimen: on a coverslip, in a pipette, as a cut-open teaching model on cradles | mitochondrion → lengthwise cut model, embryo → holding pipette, neuron → GFP cell + recording rig |
+| 1 mm – 2 m | an organ, a joint, a system | an anatomical teaching model: on a stand, opening on a hinge or sliding apart, with ports and tubing | knee → skeleton model 0–135°, heart → four-chamber cut model, nephron → plumbing on a board |
+| > 2 m | an ecosystem, a planet | a laboratory model of it: a sealed terrarium, a stream table, a globe on a stand | carbon cycle → three sealed tanks with flow meters, Daisyworld → a globe with a thermostat |
+| no body at all | a process with no physical form (differentiation, evolution, feedback) | invent a machine, and say in the caption that it is a metaphor | Waddington landscape → marble on a deformable tray |
 
-## The seven laws of life
+Two ways this fails, in addition to Anatomy's two:
 
-These sit on top of Anatomy's rules. Each is enforced by a call in `bio/bio.mjs`.
+- **Cartoon biology.** Smiling cells, glossy blobs, textbook arrows, a floating "mitochondrion" bean. Draw the specimen as it is held and measured, or as the machine it is.
+- **The machine swallows the biology.** A housing so large the subject hides inside it (an early ribosome draft was a closed cabinet). Cut it open, cut away the near half, and keep the subject the largest lit thing.
 
-1. **Scale is truth.** Every base carries a calibrated ruler in real units (nm, µm, mm, cm), and the caption says what one tick is. → `plinth(PLATE, P, { scale })`
-2. **Stains, not palettes.** Colour only where a real dye or fluorescent protein would put it: DNA is DAPI blue, neurons GFP green, protons RFP red. The four facing tones stay. → `stain(name, svg, k)`, `STAINS`
-3. **Admit the time warp.** Action potentials take µs and mitosis an hour; the readout always says "slowed N×" or "sped up N×". → the readout via `vitaSay()`
-4. **Conserve particles.** Ions, protons and nucleotides jiggle, but they are countable and conserved through every state. → a fixed pool, painted with `scene(P).put(...)`
-5. **Topology may change.** One cell really becomes two: draw the outline as the union of cross-sections, rebuilt every frame. → `liveScript()` (see `demos/mitosis/`)
-6. **Specimens, not cartoons.** Above the scale of a molecule, things sit on slides, coverslips, stands or teaching-model bases, as in a lab. → `plinth()`, `standRod()`, `shellOf()`
-7. **Declare metaphors.** Only processes with no body (a fate landscape, a feedback loop) get an invented machine, and the caption says it is a metaphor.
+## Laws of life (in addition to Anatomy's craft rules)
+
+1. **The ruler is the truth.** Every bench carries a calibrated ruler (`plinth(…, { scale })`). The caption states it: "ruler: 1 tick = 10 µm". If the figure compresses space, say so: "not to scale: the axon stands for 10 mm", "the tape is drawn ~3× stretched".
+2. **Stain, don't colour.** Colour comes only from a real dye or reporter: DAPI blue for DNA, GFP green for a neuron or a protein product, RFP red for protons, eosin, haematoxylin, a myelin tint, oxy/deoxy blood, ATP orange, Na⁺ amber, K⁺ violet. `stain(name, svg, k)` mixes the four tones toward the dye and keeps the light. Anatomy's "exactly one lit part" still holds.
+3. **Admit what time does.** Molecular events are µs–ms, development is days. The caption says how time is changed: "shown 600× slower", "about 250× faster", "days 0–5.6". If the flow is schematic, say "relative rates, not real time".
+4. **Conserve what is counted.** Ions, protons, tRNAs, cells and volumes are counted, not sprinkled. A pump moves 3 Na⁺ out and 2 K⁺ in, and the count on each side changes by exactly that. Cleavage halves volume, so radius × 0.79. Leaks run at a rate set by the gradient. The readout shows the counts.
+5. **Topology can change.** One cell becomes two; a ball of cells opens a cavity; a membrane fuses. Draw this with soft bodies (`bio/soft.mjs`), never as two circles laid over each other.
+6. **Specimens, not cartoons.** Anything larger than a molecule rests on something real: a coverslip, a dish, a pipette, a stand, cradles, a hinge. Every support touches what it holds.
+7. **Declare every metaphor.** Only a process with no body gets an invented machine, and the caption says it is one.
 
 ## Workflow
 
-Follow Anatomy's workflow, with these changes:
+Follow Anatomy's ten steps (`references/anatomy/ANATOMY-SKILL.md`, "Workflow"). The Vita changes:
 
-1. **Size it** (Figure 40–80 parts, Hero 80–150, Epic: ask first).
-2. **Truth first.** Collect the real numbers — sizes, rates, potentials, stoichiometry, concentrations — and write them as a small pure model. These also become the page's facts strip.
-3. **Invent the object.** One sentence: what moves, and what that motion means. Molecules → a machine. Cells and up → a specimen on a stage. Bodiless processes → a declared metaphor.
-4. **Parts list ≥ 40**, including the specimen stage: plinth with ruler and name plate, stand rods, slide or coverslip, recording instrument.
-5. **Plan the world.** One world unit ≈ one true unit at the figure's scale; say which in the caption.
-6. **Build geometry once**; rebuild per frame only what grows, deforms or splits (inline the kit with `liveScript()`).
-7. **Paint back to front.** Collect particles, tube pieces and parts in `scene(P)` and call `svg()`; split membranes with `shellOf()` into back and front halves.
-8. **Frame it** with `vitaPage({ n, title, zh, en, body, script, facts })`. Card text (title, hint, readout, caption) is English; the facts strip is `[value, 中文, English]`, true numbers only.
-9. **Make it live** with `vitaLoop({ stage, frame, pointer, click, keys })`: offscreen pause, idle tour, pointer and keys, still under reduced motion.
-10. **Verify like a critic.** `node scripts/capture.mjs page.html --width 820` and `--width 390`, a mid-motion shot, a 4× close-up, and `node scripts/lines.mjs page.html` to zero. Check that particle counts stay conserved by driving the page.
+1. **Size it.** Figure / Hero / Epic as in Anatomy. A whole-body system or a planet is an Epic: propose a Hero first.
+2. **Truth first, from the literature.** Collect sizes, counts, rates, thresholds and timings, and note each one's source as you go: they become the caption, the facts row and the readout. Write the model as a small pure function of time and one control. Look up anything you aren't sure of; biology numbers vary by organism, so name the organism ("human IVF timings", "bovine c8 ring", "E. coli elongation").
+3. **Pick the form from the scale table**, then say in one sentence what moves and what the motion means. Choose the one control the reader gets (hover/arrow keys): a concentration, a load, a demand, a drug on/off, time itself.
+4. **Parts list ≥ 40**, grouped as in Anatomy, plus the specimen stage: plinth with ruler and label plate, the holder (coverslip, pipette, cradles, posts), the cut faces, and the stained subject.
+5. **Plan the world in true units.** Pick a world scale per unit (`const UM = 1.6`, `const NM = 8`) and build every size from real numbers through it. Camera as Anatomy; choose the azimuth so the subject's long side and its open cut face toward the viewer.
+6. **Build static geometry once; rebuild only what changes shape.** Soft bodies and packed cells are rebuilt per frame through `SOFT` in the page (cheap at `step: 1.5`); guard redraws with a change threshold.
+7. **Paint in order.** Use `scene(P)` for anything that can overlap; split shells into back and front (`shellOf`); draw what sits inside a cut after the cavity fill and clip it to the cut (`clipPath`, see `demos/mito`).
+8. **Frame it** with `vitaPage({ n, title, zh, body, script, facts })`: card, true caption (ruler, organism, time scaling), and a facts row of at least three real numbers.
+9. **Make it live with `vitaLoop`** (`LOOP_SRC` in the page script): idle tour, pointer and keys, offscreen pause and reduced-motion still frame come for free. Keep the readout short enough not to collide with the hint (about 45 characters).
+10. **Verify.** Screenshot at 820 and 390 px and several moments of the tour; 4× close-ups of the subject; then `node bio/check.mjs site/demos/<page>.html` must end `vita check passed`. Rigid pipework still goes through Anatomy's `audit.mjs`.
 
-The caption must state the scale (1 tick = ?), the key true numbers and the time scaling.
+## The bio layer
 
-## The bio layer (`bio/bio.mjs`)
+Everything lives in `bio/`; the kit in `kit/` is never edited. Full signatures in `references/bio-api.md`.
 
-| API | What it does |
-|---|---|
-| `liveScript()` | Inlines `kit/iso-kit.mjs`, `lathe.mjs`, `tube.mjs` as `K`, `G`, `T` inside the page, so geometry can be rebuilt every frame |
-| `rng(seed)` / `RNG_SRC` | Seeded variation: no two cells alike, every build identical |
-| `STAINS`, `stain(name, svg, k)` | 13 dyes (`dapi gfp rfp eosin hema atp myelin oxy deoxy na k trna cyt`) mixed into the four tones with `color-mix`; legend swatches take a dye name (`mark: "na"`) |
-| `shellOf(c, r, P)` | A translucent membrane in two halves: `back` before the contents, `front` after |
-| `plinth(PLATE, P, { scale, label })` / `standRod(x, y, z, P)` | Specimen base with feet, screws, calibrated ruler and name plate; a stand rod with a knurled clamp |
-| `byDepth(points, P)` | Painter's order for particles and cells |
-| `scene(P)` | Depth collector: `put(depth, html)`, `at(point, html)`, `tube(points, r)`, then `svg()` |
-| `LOOP_SRC` → `vitaLoop()`, `vitaSay()` | The shared live runtime and the accessible readout |
-| `vitaPage({...})` | Page shell: nav, card, facts strip, `#embed` mode, language toggle |
-| `t(zh, en)`, `LANG_SRC`, `LANG_CSS`, `LANG_BUTTON` | Bilingual shells: both languages in the page; `html[data-lang]` picks one; `?lang=en` / `?lang=zh` |
+- `bio/bio.mjs`: `liveScript({ soft, branch })` (kit and bio modules inlined as K, G, T, SOFT, BR), `LOOP_SRC` → `vitaLoop()` and `vitaSay()`, `scene(P)`, `STAINS` / `stain()`, `shellOf()` (see-through membrane shells), `plinth()` (bench with ruler and label), `standRod()`, `rng(seed)` / `RNG_SRC`, `byDepth()`, `vitaPage()`, `BIO_CSS`.
+- `bio/soft.mjs`: `blobOf(spheres, P, { merge })` one smooth body (a dividing cell, a nucleus, a lobed organ); `clusterOf(spheres, P, { press })` + `clusterSvg()` packed cells, each shaded as its own sphere with membranes traced where cells meet, `press` flattens contacts (compaction); `packSpheres(seed, list, R)` relaxes cells into a container. Output is a kit solid, so stains and tones apply.
+- `bio/branch.mjs`: `treeOf(seed, root, dir, opts)` tapering trees with Murray's-law radii (dendrites, vessels, airways, roots); `treeItems(tree, P)` draws them with ball tees at every fork and caps at every tip.
+- `bio/check.mjs`: the life-law checker (errors, live readout, keys, reduced motion, 390 px, ruler, stains, time statement, facts). Exit code 1 on any failure.
 
-## Building the site
+## Craft for living things
 
-```bash
-for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
-```
+`references/bio-craft.md` has the details and the faults earlier figures were rejected for. The short form:
 
-`site/` is a static folder (each page self-contained). Register a new figure in the `demos` array of `build-index.mjs` (the 7th column is its file name). Deploy anywhere static, for example `wrangler deploy` with the included `wrangler.jsonc`.
+- **The subject is the biggest lit thing.** Housings, holders and tracks are `mid`; if they hide the subject, cut them open or move them (a clamp behind a vesicle projects straight up and vanishes; move it to the front).
+- **Cut faces tell the biology.** A membrane cut shows head groups as dots and tails as short rules; a double membrane shows both lines and the space between; a cut organ shows its wall layers. Cut faces are lighter than the outside.
+- **Cells are packed, not scattered.** Neighbours touch; compaction flattens contacts and fades membranes; cleavage keeps total volume.
+- **Particles are few, counted and stained**, sized so they read at 1× (≥ 2 px), with depth-correct groups above, inside and below a membrane.
+- **Show the instrument that measures it**: a recording amplifier and trace, a force clamp, a ruler, a flow meter. The readout then reads off that instrument.
+- **Every true number gets one home**: caption, readout or facts row, not all three.
 
-## Credits
+## When the request is not a figure
 
-Anatomy Vita is built on Anatomy by Ryan (@wheresryan22), MIT License — see `LICENSE-anatomy`. `kit/`, `scripts/` and `references/` are Anatomy's, unchanged.
+A poster or handout of a finished figure: Anatomy's print flow (`references/anatomy/print.md`). A whole site of figures:
+`node build-index.mjs` writes `site/index.html` (essay + embedded figures + roadmap); deploy `site/` to any static host
+(`wrangler deploy` with `assets.directory = "./site"`, Netlify, GitHub Pages).

@@ -1,0 +1,35 @@
+{
+  "skill_name": "anatomy-vita",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I teach high-school biology. Make me one interactive figure explaining how a synapse works: the action potential arrives, vesicles fuse, neurotransmitter crosses the cleft and opens receptors on the other side. Single HTML file, white background.",
+      "expected_output": "A standalone light-theme HTML page with one framed isometric figure: a cut-open synapse at true scale (cleft ~20 nm, vesicles ~40 nm) on a specimen stage with a calibrated ruler, the presynaptic terminal drawn with a cut face showing the membrane, counted vesicles and transmitter particles stained consistently, receptors that open, a control the reader drives (stimulus or firing rate), a live readout, a caption naming the ruler and the time scaling, a facts row of real numbers, and `node bio/check.mjs` ending `vita check passed`.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Can you draw the knee joint for our physio clinic's website? I want people to see what the ACL and PCL do when the knee bends.",
+      "expected_output": "A teaching-model style knee on a stand (femur, tibia, patella, menisci, ACL and PCL as crossing bands) that flexes 0–135° under hover or arrow keys, with ligaments shown taut or slack according to angle, a readout of the angle and which ligament is loaded, a ruler in cm, no cartoon styling, one lit part (the ligament under tension), and a caption explaining the cruciate cross. Passes `bio/check.mjs`.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Explain cell differentiation to a general audience with one of those isometric machine illustrations.",
+      "expected_output": "Because differentiation has no single physical body, the figure invents a machine (e.g. a marble on a deformable Waddington tray with valleys that deepen as signals arrive) and the caption explicitly states that the object is a metaphor. Real cell types and signals are named; readout reflects the chosen fate; passes `bio/check.mjs`.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Show how red blood cells pick up oxygen in the lungs, at the level of one alveolus. Interactive please.",
+      "expected_output": "An alveolus with a wrapped capillary at true scale (alveolus ~200 µm, red cells 7.5 µm) as a cut specimen, red cells drawn as packed soft bodies (bio/soft.mjs) changing from the deoxy to the oxy stain as they pass, O₂/CO₂ particles counted across a 0.5–1 µm barrier, a control such as breathing rate or inspired O₂, saturation in the readout, caption with ruler and time scaling, passes `bio/check.mjs`.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Make a figure of a growing root system for a plant-science explainer: roots branch and go down, root hairs absorb water.",
+      "expected_output": "A rhizotron or soil column on a bench, roots drawn with bio/branch.mjs (Murray radii, ball tees, caps at tips) growing over time with gravity bias, root hairs near tips, water particles counted moving in, a time control in days, caption with ruler and time scaling, passes `bio/check.mjs`.",
+      "files": []
+    }
+  ]
+}

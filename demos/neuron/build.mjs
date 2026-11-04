@@ -161,7 +161,7 @@ function frameDraw(){
 }
 function tick(now){ const dt=last?Math.min((now-last)/1000,1/30):1/60; last=now; clock+=dt;
   if(touring){ nextAuto-=dt; if(nextAuto<=0&&!fired.length){ if(shots>0&&shots%3===0){ setMyelin(!myelinated); nextAuto=1.2; shots++; } else { fire(); nextAuto=myelinated?1.4:1.5; } } }
-  frameDraw(); frame=visible?requestAnimationFrame(tick):0; }
+  frameDraw(); frame=visible&&!still.matches?requestAnimationFrame(tick):0; }
 function setMyelin(v){ myelinated=v; my.style.opacity=v?"1":"0.08"; }
 const run=()=>{ if(!frame&&visible){ last=0; frame=requestAnimationFrame(tick);} };
 let idle=0; const takeOver=()=>{ touring=false; clearTimeout(idle); idle=setTimeout(()=>{ touring=!still.matches; nextAuto=1; },6000); };
@@ -174,10 +174,10 @@ frameDraw();
 const body = k.plateHtml({
   fig: "Fig 04", title: "Action potential", hint: "Click or Space fire · M myelin",
   readout: "myelinated · 40 m/s · Vm −70 mV", keys: [{ mark: "lit", label: "The impulse: lit nodes, or the moving band without myelin" }, { mark: "green", label: "Neuron (GFP)" }, { mark: "raised", label: "Myelin internodes" }],
-  caption: "The axon stands for 10 mm of nerve, compressed; all speeds are true and shown 2,000× slower. At rest the membrane sits at −70 mV. A stimulus at the soma crosses threshold (about −55 mV) at the axon hillock; sodium channels open and the membrane swings to about +40 mV in half a millisecond, then potassium brings it back past −80 mV. Myelin insulates the internodes, so the impulse is regenerated only at the nodes of Ranvier and jumps between them at about 40 m/s; without myelin (a thin C fibre) it must regenerate everywhere and crawls at about 2 m/s.",
+  caption: "Not to scale: the axon stands for 10 mm of nerve, compressed; all speeds are true and shown 2,000× slower. At rest the membrane sits at −70 mV. A stimulus at the soma crosses threshold (about −55 mV) at the axon hillock; sodium channels open and the membrane swings to about +40 mV in half a millisecond, then potassium brings it back past −80 mV. Myelin insulates the internodes, so the impulse is regenerated only at the nodes of Ranvier and jumps between them at about 40 m/s; without myelin (a thin C fibre) it must regenerate everywhere and crawls at about 2 m/s.",
   body: `<div class="iso-stage" tabindex="0" role="button" aria-label="Neuron: Space fires an action potential, M toggles the myelin">${svg}</div>`,
 });
-const page = vitaPage({ n: "04", title: "Action potential", zh: "神经元 · 动作电位", en: "Neuron · action potential", body, script: liveScript() + live,
-  facts: [["−70 mV", "静息膜电位", "resting potential"], ["+40 mV", "峰值", "peak"], ["~1 ms", "一次动作电位", "one action potential"], ["40 m/s", "有髓纤维传导", "myelinated conduction"], ["0.5–2 m/s", "无髓纤维传导", "unmyelinated conduction"], ["~86 billion" , "人脑神经元数（~860 亿）", "neurons in a human brain"]] });
+const page = vitaPage({ n: "04", title: "Action potential", zh: "神经元 · 动作电位", body, script: liveScript() + live,
+  facts: [["−70 mV", "静息膜电位"], ["+40 mV", "峰值"], ["~1 ms", "一次动作电位"], ["40 m/s", "有髓纤维传导"], ["0.5–2 m/s", "无髓纤维传导"], ["~860 亿", "人脑神经元数"]] });
 writeFileSync(join(OUT, "04-neuron.html"), page);
 console.log("wrote 04-neuron.html", (page.length / 1024).toFixed(0) + " KB");

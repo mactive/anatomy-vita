@@ -78,6 +78,9 @@ Anatomy Vita = 在 [Anatomy skill](https://github.com/wheresryan22/anatomy)（Ry
 | `byDepth()` | 粒子/细胞的画家排序 |
 | `vitaPage()` | 页面外壳：导航、卡片、事实栏、`?embed` 嵌入模式 |
 | `scene(P)` *(v2)* | 深度收集器：`put(depth, html)` / `tube(...)` / `svg()` |
+| `soft.mjs` *(v3)* | `blobOf` / `clusterOf` + `clusterSvg` / `packSpheres`：软体与堆积细胞（屏幕网格场 + marching squares + Chaikin） |
+| `branch.mjs` *(v3)* | `treeOf` / `treeItems`：Murray 定律分叉树，球形三通 |
+| `check.mjs` *(v3)* | 生命法则检查器（Playwright） |
 | `LOOP_SRC` *(v2)* | 共享运行时：`vitaLoop({...})` 统一 rAF、离屏暂停、闲置巡演、指针/键盘、减少动态 |
 
 ---
@@ -86,8 +89,8 @@ Anatomy Vita = 在 [Anatomy skill](https://github.com/wheresryan22/anatomy)（Ry
 
 - 目录：`demos/<slug>/build.mjs` → 写 `site/demos/NN-name.html`；`node build-index.mjs` → `site/index.html`
 - 每个 build 文件头注释三行：对象是什么 / 什么在动 / 运动代表什么
-- 图页：`vitaPage({ n, title, zh, en, body, script, facts })`；`facts` 为 `[值, 中文说明, English label]`，必须是真实数值；值本身不要含中文
-- 卡片文字（标题、提示、读数、图注）用英文（沿用原版排版）；站点外壳、首页长文、副标题、事实栏中英双语，用 `t(zh, en)` 写
+- 图页：`vitaPage({ n, title, zh, body, script, facts })`；`facts` 为 `[值, 中文说明]`，必须是真实数值
+- 卡片文字（标题、提示、读数、图注）用英文（沿用原版排版），站点外壳与事实栏用中文
 - 图注必须包含：比例尺说明（1 tick = ?）、关键真实数值、时间缩放倍数
 - 不改 `kit/`、`scripts/`（上游代码）；所有扩展进 `bio/`
 - 新 demo 登记在 `build-index.mjs` 的 `demos` 数组（第 7 列填文件名即「已上线」）
@@ -99,9 +102,7 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
 ```
 
 ### 部署
-`/opt/homebrew/bin/wrangler deploy`（`wrangler.jsonc`：Workers 静态资源，目录 `site/`）→ https://anatomy-vita.mactive.workers.dev/
-
-`site/` 是纯静态目录（index + demos/*.html，每页自包含）。也可：
+`site/` 是纯静态目录（index + demos/*.html，每页自包含）。可直接：
 - 发布为 claude.ai Artifact（多文件），或
 - `npx vercel site` / `npx netlify deploy --dir site` / GitHub Pages
 
@@ -119,7 +120,7 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
 | 06 | 驱动蛋白行走 | 8 nm | 微管轨道上的双足步行器 + 光镊负载 | 2 | ✅ v2 |
 | 07 | 钠钾泵 | 10 nm | 双门气闸：3 Na⁺ 出、2 K⁺ 进 | 2 | ✅ v2 |
 | 08 | 线粒体 | 1 µm | 剖开的线粒体教学模型 | 2 | ✅ v2 |
-| 09 | 卵裂与囊胚 | 100 µm | 透明带里的 1→2→…→囊胚 | 3 | |
+| 09 | 卵裂与囊胚 | 100 µm | 握持针下的人类胚胎，soft.mjs | 3 | ✅ v3 |
 | 10 | 细胞分化 | — | Waddington 景观（声明隐喻） | 3 | |
 | 11 | 突触传递 | 1 µm | 囊泡停靠、融合、受体开门 | 3 | |
 | 12 | 肌节收缩 | 2.5 µm | 粗细丝滑行 | 3 | |
@@ -140,8 +141,9 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
 
 - 每页内联整个 kit（K/G/T），单页 170–420 KB；可接受，后续可抽成共享 `site/kit.js`（需改 `vitaPage`）
 - 03 有丝分裂细节偏少（细胞内只有染色体和纺锤体），可补：中心体、线粒体、内质网碎片、细胞骨架
-- 尚未跑原版 `audit.mjs` / `lines.mjs`（需要 Chrome 端口脚本），目前靠截图人工检查
-- 第 3 批起需要新原语：**细胞团堆积**（种子化球堆积 + 接触面压扁）、**可形变轮廓**（2D 截面并集已在 03 局部实现，应提进 bio）
+- 刚性管线仍可用原版 `audit.mjs`；膜/粒子由 `bio/check.mjs` 检查行为与法则，几何仍靠截图 + 4× 特写
+- 03 有丝分裂可改用 `blobOf` 重写分裂轮廓（目前是局部实现）
+- 04 神经元可改用 `branch.mjs` 的树突
 
 ---
 
@@ -170,15 +172,25 @@ for d in demos/*/; do node $d/build.mjs; done && node build-index.mjs
 - 站点发布为 claude.ai Artifact（多文件：index + demos/*.html）：https://claude.ai/artifact/U5Qcv6dRxevqZK2SyrFiam
 - 嵌入模式改为同时支持 `?embed` 和 `#embed`（artifact 只透传 hash）；首页 iframe 用 `#embed`
 
-### v3（2026-11-04）
-- 双语：bio 新增 `t(zh, en)`、`LANG_SRC`（`?lang=`/`#lang=` → localStorage `vita-lang` → 浏览器语言）、`LANG_CSS`、`LANG_BUTTON`；
-  `html[data-lang]` 决定显示哪种；首页切换时同步嵌入的 iframe（storage 事件 + 直接调用 `vitaLang`）
-- `vitaPage` 新增 `en` 副标题，facts 第三列英文；8 个 demo 已补齐
-- 首页全文英译；新增第三节「对 Anatomy 的扩充与改进」（9 条扩充 + 8 条改进）
-- 部署改为 Cloudflare Workers：`wrangler.jsonc` + `wrangler deploy`，已验证线上中英切换、iframe 同步、无控制台错误
-
-### 下一步（v4 建议）
+### 下一步（v3 建议）
 - 第 3 批（细胞→组织）：09 卵裂与囊胚、10 Waddington 景观、11 突触、12 肌节。先在 bio 里做两个新原语：
   `packCells(seed, n, bounds)`（种子化球堆积 + 接触面压扁的截面）和 `blobOutline(circles)`（03 里的截面并集提成公共函数）
 - 03 有丝分裂补细节（中心体、线粒体、内质网碎片、细胞骨架）
 - 接入原版 `scripts/lines.mjs` 线端检查（需要本机 Chrome）
+
+### v3（2026-11-04）—— 变成真正的 skill + 加深能力层
+- **Skill 化**：根目录 `SKILL.md`（name: anatomy-vita；生命法则 7 条写成流程；尺度→物体对照表；工作流对 Anatomy 十步的增量）；
+  `references/bio-craft.md`（选物体、被退回的初稿及修法、尺度、时间、染料、膜与剖切、软体、分叉、粒子、验证）；
+  `references/bio-api.md`；`references/anatomy/`（原版 SKILL.md + 10 份 references，原样 vendored，commit 1482e84）；`evals/evals.json`（5 条）；README 改写
+- **kit 依旧零改动**（18 个核心文件与上游逐字节一致）
+- **bio/soft.mjs**：屏幕空间标量场 + marching squares（同原版 spot-plate 的做法）+ Chaikin 平滑。
+  `blobOf`（smooth-min 融合体）、`clusterOf`（z-buffer 堆积细胞，按各自球体着色，细胞间描膜，`press` 压平接触面）、`packSpheres`。
+  输出是 kit solid 结构，`solidSvg`、四色调、染色全部兼容；Node 构建与页面（`SOFT`）同一份代码
+- **bio/branch.mjs**：`treeOf`（Murray 定律半径、种子化、可加重力/光照偏置）+ `treeItems`（球形三通、末端帽）
+- **bio/check.mjs**：生命法则检查器。首轮就抓出旧图的真实问题：01/03/08 图注没写时间缩放、04 在减少动态下仍在跑 rAF、04 未声明比例
+  → 已全部修复，9 张图全部 `vita check passed`
+- `liveScript({ soft, branch })` 可把 bio 模块内联进页面
+- **09 卵裂→囊胚**：第一张用新原语的图。6 代谱系（1→64），每代 `packSpheres`，子细胞从母细胞旁出发；分裂体积减半（r×0.79），
+  分裂时间随代数逐渐不同步；day 3.05–3.55 致密化（press 0.02→0.16、膜线淡出）；day 4.55 起囊胚腔打开，
+  14 个内细胞团 + 50 个滋养层，近半滋养层虚化、腔内液体、切口环；day 5–5.6 扩张、透明带变薄。56–59 fps
+- `demos/lab`：原语试验台页面

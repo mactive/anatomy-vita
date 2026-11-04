@@ -161,10 +161,10 @@ draw(t); drawn=t;
 const body = k.plateHtml({
   fig: "Fig 03", title: "Mitosis", hint: "Hover ↔ to scrub time · ← → phase",
   readout: "Metaphase · +30 min", keys: [{ mark: "dotted", label: "Chromatids (2n = 8), stained purple" }, { mark: "blue", label: "Nuclei" }, { mark: "lit", label: "Contractile ring" }],
-  caption: "A 14 µm rounded animal cell (ruler: 1 tick = 1 µm) with 2n = 8 chromosomes, as in the fruit fly. Mitosis takes about an hour: the chromosomes condense in prophase, the envelope breaks and the spindle captures every kinetochore, all eight line up on the metaphase plate, then the sisters are pulled apart in about five minutes and an actomyosin ring pinches the cell in two, each daughter half the volume (0.79× the radius).",
+  caption: "A 14 µm rounded animal cell (ruler: 1 tick = 1 µm) with 2n = 8 chromosomes, as in the fruit fly. Mitosis takes about an hour (shown about 250× faster): the chromosomes condense in prophase, the envelope breaks and the spindle captures every kinetochore, all eight line up on the metaphase plate, then the sisters are pulled apart in about five minutes and an actomyosin ring pinches the cell in two, each daughter half the volume (0.79× the radius).",
   body: `<div class="iso-stage" tabindex="0" role="slider" aria-label="Mitosis: arrow keys step from phase to phase" aria-valuemin="-8" aria-valuemax="72" aria-valuenow="30">${svg}</div>`,
 });
-const page = vitaPage({ n: "03", title: "Mitosis", zh: "有丝分裂 · 细胞尺度", en: "Mitosis · cell scale", body, script: liveScript() + live,
-  facts: [["~60 min", "哺乳动物细胞 M 期", "M phase in a mammalian cell"], ["~5 min", "后期姐妹染色单体分离", "anaphase: sister chromatids separate"], ["~1 µm/min", "染色体被拉向两极的速度", "speed chromosomes are pulled poleward"], ["2^(−1/3)", "子细胞半径比 = 0.79", "daughter radius ratio = 0.79"], ["~37 trillion", "人体约有的细胞数（~37 万亿）", "cells in a human body"]] });
+const page = vitaPage({ n: "03", title: "Mitosis", zh: "有丝分裂 · 细胞尺度", body, script: liveScript() + live,
+  facts: [["~60 min", "哺乳动物细胞 M 期"], ["~5 min", "后期姐妹染色单体分离"], ["~1 µm/min", "染色体被拉向两极的速度"], ["2^(−1/3)", "子细胞半径比 = 0.79"], ["~37 万亿", "人体约有的细胞数"]] });
 writeFileSync(join(OUT, "03-mitosis.html"), page);
 console.log("wrote 03-mitosis.html", (page.length / 1024).toFixed(0) + " KB");
