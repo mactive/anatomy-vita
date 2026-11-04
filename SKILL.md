@@ -17,7 +17,7 @@ small model of the real biology, and the figure says how it has changed space an
 motion and verification all apply unchanged. This file only adds what life needs. When the two disagree, Anatomy's
 craft wins on drawing; this file wins on biology.
 
-Finished figures ship in `demos/` (01–15 so far); open the closest one before you start. Each builds with
+Finished figures ship in `demos/` (01–19 so far); open the closest one before you start. Each builds with
 `node demos/<name>/build.mjs` into `site/demos/`.
 
 | Figure | Scale | Object | Shows how to |
@@ -37,6 +37,10 @@ Finished figures ship in `demos/` (01–15 so far); open the closest one before 
 | `knee/` 13 knee | 10 cm | teaching skeleton + goniometer | a jointed organ driven by a linkage; cords that go taut/slack; glass compartments |
 | `heart/` 14 heart | 12 cm | four-chamber cut model + pressure trace | a Hero organ; valves; a Wiggers-style trace from one model |
 | `alveolus/` 15 alveolus | 200 µm | cut-open alveolus on posts + oximeter | a cut sphere, blood that blends oxy↔deoxy (`stainMix`), a disease switch (fibrosis) |
+| `nephron/` 16 nephron | 4 cm | glass tubing on a cortex/medulla board + graduated cylinder | counted flow (1 dot = 1% of filtrate) leaving at the true reabsorption sites; a second ruler for a non-spatial quantity (mOsm) |
+| `reflex/` 17 reflex arc | 1 m | knee-jerk rig: leg on cradles, pendulum hammer, cord slice, scope | a timed one-shot event (tap → volley → synapse → EMG → kick); a jointed part rebuilt per frame |
+| `circulation/` 18 circulation | 1.7 m | mock circulatory loop: twin pumps, lung manifold, five beds with rotameters | flow conserved across parallel branches; one meter per branch with its own full scale |
+| `immune/` 19 immune response | 10 µm | lawn of B cells on a coverslip + titer monitor | a prebuilt cell library (no per-frame lathes); clone size on a log scale; a timeline with a second dose |
 
 `demos/lab/` is a test bench for the soft-body and branching primitives.
 

@@ -18,15 +18,15 @@ const demos = [
   ["13","膝关节","Knee joint","10 cm","教学骨骼模型 + 量角器：交叉四连杆的 ACL/PCL 自然产生股骨后滚；各束随角度绷紧或松弛；可切换 ACL / PCL 断裂",4,"13-knee.html","A teaching skeleton with a goniometer: the cruciates as a crossed four-bar produce the femur's roll-back; each bundle goes taut or slack with angle; switch to a torn ACL or PCL"],
   ["14","心脏","Heart","12 cm","冠状面剖开的四腔教学模型 + 双传感器导管与监护仪：一个弹性腔-Windkessel 模型驱动瓣膜开合、房室平面下移、血流点计数（1 点 = 5 mL）和 Wiggers 压力曲线",4,"14-heart.html","A four-chamber teaching model cut in the frontal plane, with a dual-sensor catheter and a monitor: one elastance–Windkessel model drives the valves, the descending AV plane, counted blood (1 dot = 5 mL) and a Wiggers pressure trace"],
   ["15","肺泡与呼吸","Alveolus","200 µm","赤道剖开的人肺泡模型 + 血氧仪：红细胞沿毛细血管排队通过，按 Hill 曲线从 deoxy 染成 oxy；运动缩短通过时间，纤维化加厚屏障，出口血氧下降",4,"15-alveolus.html","A human alveolus cut at its equator with an oximeter: red cells file through the capillary and turn from deoxy to oxy along the Hill curve; exercise shortens transit, fibrosis thickens the barrier and the outflow desaturates"],
-  ["16","肾单位","Nephron","5 cm","过滤与回收管路：肾小球筛、亨利袢逆流倍增",4,null,"Filter-and-reclaim plumbing: the glomerular sieve and the loop of Henle's countercurrent multiplier"],
-  ["17","反射弧 / 神经网络","Reflex arc","1 m","膝跳反射：感受器 → 脊髓 → 效应器，一条真实时序",5,null,"The knee-jerk: receptor → spinal cord → effector on a true timeline"],
-  ["18","循环系统","Circulation","1.7 m","双回路管网：体循环与肺循环，一滴血走完一圈",5,null,"Two-loop pipework: systemic and pulmonary circuits, one drop of blood makes the round"],
-  ["19","免疫应答","Immune response","10 µm","克隆选择：抗原挑中一个 B 细胞，然后它被复制成一支军队",5,null,"Clonal selection: an antigen picks one B cell, which is copied into an army"],
+  ["16","肾单位","Nephron","4 cm","玻璃管路的肾单位教学板：每个点是 1% 的滤液，在真实的重吸收部位离开；ADH 决定集合管放回多少水，量筒按真实尿量注满",4,"16-nephron.html","A nephron in glass tubing on a cortex/medulla board: each dot is 1% of the filtrate and leaves where water is really reabsorbed; ADH sets how much the collecting duct takes back, and a cylinder fills at the true urine flow"],
+  ["17","反射弧 / 膝跳反射","Reflex arc","1 m","膝跳反射教学台：叩诊锤敲髌腱，GFP 感觉纤维把冲动送进脊髓切片，一个突触后经 RFP 运动纤维返回；示波器显示 ~25 ms 后的肌电",5,"17-reflex-arc.html","A knee-jerk rig: a hammer taps the tendon, a GFP sensory cable carries the volley into a cord slice, one synapse, and an RFP motor cable brings it back; the scope shows the EMG ~25 ms after the tap"],
+  ["18","循环系统","Circulation","1.7 m","模拟循环台：两个泵球代表左右心，玻璃肺歧管与五条并联器官床，各带转子流量计；运动时心输出量 5 → 17.5 L/min 并重新分配",5,"18-circulation.html","A mock circulatory loop: twin pumps for the right and left heart, a glass lung manifold and five parallel beds with rotameters; exercise raises output from 5 to 17.5 L/min and re-divides it"],
+  ["19","免疫应答","Immune response","10 µm","盖玻片上的克隆选择：抗原只挑中钥匙匹配的那个 B 细胞，它分裂成克隆、变成浆细胞分泌抗体；第 21 天再次接种，二次应答更快更高",5,"19-immune.html","Clonal selection on a coverslip: the antigen picks the one B cell whose key fits, which divides into a clone of plasma cells shedding antibody; a second dose on day 21 brings a faster, higher response"],
   ["20","人体系统总装","The whole body","1.7 m","Epic：把 13–19 装进一个可剖开的人体模型（需先确认）",5,null,"Epic: 13–19 assembled into one human model you can open (to be confirmed first)"],
   ["21","生态系统碳循环","Carbon cycle","10 km","星球尺度：光合—呼吸—沉积三条管路，碳量守恒",6,null,"Planet scale: photosynthesis, respiration and burial as three pipelines, carbon conserved"],
   ["22","地球生物圈 · Daisyworld","Daisyworld","12,700 km","黑白雏菊调节行星温度的反馈机器",6,null,"A feedback machine where black and white daisies regulate a planet's temperature"],
 ];
-const batchName = {1:["第 1 批 · 分子→细胞（已完成）","Batch 1 · molecule → cell (done)"],2:["第 2 批 · 分子机器（已完成）","Batch 2 · molecular machines (done)"],3:["第 3 批 · 细胞→组织（已完成）","Batch 3 · cell → tissue (done)"],4:["第 4 批 · 器官（13–15 已上线）","Batch 4 · organs (13–15 live)"],5:["第 5 批 · 系统","Batch 5 · systems"],6:["第 6 批 · 星球（可选）","Batch 6 · planet (optional)"]};
+const batchName = {1:["第 1 批 · 分子→细胞（已完成）","Batch 1 · molecule → cell (done)"],2:["第 2 批 · 分子机器（已完成）","Batch 2 · molecular machines (done)"],3:["第 3 批 · 细胞→组织（已完成）","Batch 3 · cell → tissue (done)"],4:["第 4 批 · 器官（已完成）","Batch 4 · organs (done)"],5:["第 5 批 · 系统（17–19 已上线）","Batch 5 · systems (17–19 live)"],6:["第 6 批 · 星球（可选）","Batch 6 · planet (optional)"]};
 const done = demos.filter(d => d[6]);
 const rows = demos.map(d => `<tr class="${d[6]?"is-done":""}"><td class="mono">${d[0]}</td><td>${d[6]?`<a href="demos/${d[6]}">${t(d[1],d[2])}</a>`:t(d[1],d[2])}<small>${t(d[2],d[1])}</small></td><td class="mono">${d[3]}</td><td>${t(d[4],d[7])}</td><td class="mono">${d[6]?t("● 已上线","● live"):t("○ 第 "+d[5]+" 批","○ batch "+d[5])}</td></tr>`).join("\n");
 const ruler = demos.filter((d,i,a)=>a.findIndex(x=>x[3]===d[3])===i && d[3]!=="—").map(d=>`<span><b>${d[3]}</b>${t(d[1],d[2])}</span>`).join("");
@@ -222,7 +222,7 @@ ${B("<p>每条法则都由 bio 层里一个具体的调用来执行，所以它�
 </section>
 
 <section id="gallery">${H("gallery")}
-${B("<p>第 1–3 批与第 4 批的 13–15，从 2 nm 到 10 cm。点一张图跳到它的详解，那里有可交互的完整图。</p>", "<p>Batches 1–3 plus 13–15 from batch 4, from 2 nm to 10 cm. Click a figure to jump to its section, where the full interactive figure lives.</p>")}
+${B("<p>第 1–4 批与第 5 批的 17–19，从 2 nm 到 1.7 m。点一张图跳到它的详解，那里有可交互的完整图。</p>", "<p>Batches 1–4 plus 17–19 from batch 5, from 2 nm to 1.7 m. Click a figure to jump to its section, where the full interactive figure lives.</p>")}
 <div class="grid">${done.map(thumb).join("\n")}</div>
 </section>
 
