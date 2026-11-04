@@ -12,7 +12,7 @@ const demos = [
   ["07","钠钾泵与细胞膜","Na⁺/K⁺ pump","10 nm","双门气闸：3 Na⁺ 出、2 K⁺ 进，离子守恒可数；漏通道 + 乌本苷开关，阻断后梯度消散",2,"07-na-k-pump.html","A two-door airlock: 3 Na⁺ out, 2 K⁺ in, every ion conserved and countable; leak channels plus an ouabain switch — block it and the gradient runs down"],
   ["08","线粒体全貌","Mitochondrion","1 µm","纵剖的线粒体教学模型：双层膜切面、15 片板状嵴、嵴缘的 ATP 合酶排；ADP 需求驱动 state 4 → state 3",2,"08-mitochondrion.html","A mitochondrion teaching model cut lengthwise: double-membrane section, 15 lamellar cristae, ATP synthase rows on their rims; ADP demand drives state 4 → state 3"],
   ["09","卵裂与囊胚","Cleavage → blastocyst","100 µm","握持针下透明带里的人类胚胎：1→2→4→8→致密化桑椹胚→囊胚（近半切开）；体积守恒，分裂逐渐不同步",3,"09-cleavage.html","A human embryo in its zona on a holding pipette: 1→2→4→8→compacted morula→blastocyst (half cut away); volume is conserved and divisions drift out of step"],
-  ["10","细胞分化 · Waddington 景观","Differentiation","5–28 天","声明的隐喻：层板拼成的沃丁顿地形板，12 个 Oct4-GFP 细胞越过闸门滚进 6 条命运山谷（神经元、皮肤、血液、心肌、肠、肝）",3,"10-differentiation.html","A declared metaphor: Waddington's landscape as a sliced plywood board; 12 Oct4-GFP cells pass a gate and roll into six fate valleys (neuron, skin, blood, heart, gut, liver)"],
+  ["10","细胞分化 · Waddington 景观","Differentiation","day 5–28","声明的隐喻：层板拼成的沃丁顿地形板，12 个 Oct4-GFP 细胞越过闸门滚进 6 条命运山谷（神经元、皮肤、血液、心肌、肠、肝）",3,"10-differentiation.html","A declared metaphor: Waddington's landscape as a sliced plywood board; 12 Oct4-GFP cells pass a gate and roll into six fate valleys (neuron, skin, blood, heart, gut, liver)"],
   ["11","突触传递","Synapse","1 µm","剖开的海马突触 + 刺激/记录双电极：Ca²⁺ 进入、囊泡按 [Ca²⁺]⁴ 概率融合、谷氨酸跨过间隙打开 AMPA，EPSP 上升；低钙时出现失败",3,"11-synapse.html","A cut-open hippocampal synapse with stimulating and recording pipettes: Ca²⁺ enters, vesicles fuse with probability ∝ [Ca²⁺]⁴, glutamate crosses the cleft and opens AMPA receptors, the EPSP rises; at low calcium it fails"],
   ["12","肌节收缩","Sarcomere","2.5 µm","滑尺式肌节：Z 盘装在带弹簧的滑车上，128 个肌球蛋白头按 Ca²⁺ 结合、划桨、脱离；肌节从 2.50 缩到约 2.1 µm",3,"12-sarcomere.html","A slide-rule sarcomere: Z discs on sprung carriages, 128 myosin heads binding, stroking and letting go as Ca²⁺ arrives; the sarcomere shortens from 2.50 to about 2.1 µm"],
   ["13","膝关节","Knee joint","10 cm","教学骨骼模型 + 量角器：交叉四连杆的 ACL/PCL 自然产生股骨后滚；各束随角度绷紧或松弛；可切换 ACL / PCL 断裂",4,"13-knee.html","A teaching skeleton with a goniometer: the cruciates as a crossed four-bar produce the femur's roll-back; each bundle goes taut or slack with angle; switch to a torn ACL or PCL"],
@@ -222,7 +222,7 @@ ${B("<p>每条法则都由 bio 层里一个具体的调用来执行，所以它�
 </section>
 
 <section id="gallery">${H("gallery")}
-${B("<p>第 1–2 批与第 3 批的 09，从 2 nm 到 1 mm。点一张图跳到它的详解，那里有可交互的完整图。</p>", "<p>Batches 1–2 plus 09 from batch 3, from 2 nm to 1 mm. Click a figure to jump to its section, where the full interactive figure lives.</p>")}
+${B("<p>第 1–3 批与第 4 批的 13–15，从 2 nm 到 10 cm。点一张图跳到它的详解，那里有可交互的完整图。</p>", "<p>Batches 1–3 plus 13–15 from batch 4, from 2 nm to 10 cm. Click a figure to jump to its section, where the full interactive figure lives.</p>")}
 <div class="grid">${done.map(thumb).join("\n")}</div>
 </section>
 
